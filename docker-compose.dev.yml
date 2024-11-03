@@ -1,0 +1,42 @@
+
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/root/redis
+      - ./db/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
+
+  postgres:
+    image: timescale/timescaledb-ha:pg16
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=${RG_AGENT_POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+     - postgres-data:/home/postgres/pgdata/data
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway" 
+
+
+volumes:
+  postgres-data:
+  redis-data:
+
+
+# environment variables to be used later
+# RG_AGENT_POSTGRES_PASSWORD < the "rg_agent" postgres database user password 
+
+
