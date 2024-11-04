@@ -1,5 +1,39 @@
 
 services:
+
+  rg_agent:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./apps/agent
+    volumes:
+      - ./apps/agent/src:/apps/agent/src
+    environment:
+      - RG_AGENT_POSTGRES_URL=postgres
+      - RG_AGENT_POSTGRES_CREDENTIALS
+      - RG_AGENT_REDIS_URL=redis
+    depends_on:
+      - postgres
+      - redis
+
+  telegramhandler:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./apps/telegram
+    volumes:
+      - ./apps/telegram/src:/apps/telegram/src
+    environment:
+      - RG_AGENT_POSTGRES_URL=postgres
+      - RG_AGENT_POSTGRES_CREDENTIALS
+      - RG_AGENT_REDIS_URL=redis
+      - TG_REAPER_API_STRING_SESSION
+      - TG_REAPER_API_ID
+      - TG_REAPER_API_HASH
+      - TG_REAPER_ID
+      - RG_TG_MAIN_CHAT
+      - RG_TG_MAIN_CHAT_TEST
+    depends_on:
+      - postgres
+      - redis
   redis:
     image: redis:latest
     build:
@@ -18,7 +52,7 @@ services:
     image: timescale/timescaledb-ha:pg16
     restart: always
     environment:
-      - POSTGRES_PASSWORD=${RG_AGENT_POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD=${RG_ADMIN_POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -31,7 +65,6 @@ services:
       - "8081:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway" 
-
 
 volumes:
   postgres-data:
