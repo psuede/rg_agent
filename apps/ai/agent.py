@@ -1,0 +1,489 @@
+from openai import OpenAI
+from anthropic import Anthropic
+from openpipe import OpenAI as OpenPipeAI
+import os
+import json
+import threading
+import requests
+import yaml
+from typing import Dict, List, Any, Optional, Set
+from pathlib import Path
+from rich.panel import Panel
+from logger import AgentLogger, console, logger
+from redis import Redis
+from dataclasses import dataclass
+
+# Initialize MODEL_SPECS
+MODEL_SPECS = {
+    "The Judge": {"api": "openai", "model": "gpt-3.5-turbo-0125"},
+    "The Architect": {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
+    "The Dreamer": {"api": "openpipe", "model": "openpipe:gold-months-train"},
+    "The Oracle": {"api": "openai", "model": "gpt-4-0125-preview"},
+    "The One": {"api": "openpipe", "model": "openpipe:gold-months-train"}
+}
+
+# Define your event tags and their corresponding Redis buckets
+EVENT_TAGS = {
+    "on-chain-buy": ["buy_transactions"],
+    "on-chain-lock": ["lock_transactions"],
+    "twitter-comment": ["twitter_comments"],
+    "twitter-tweet": ["twitter_tweets"],
+    "telegram-curator": ["curator_inputs"]
+}
+
+@dataclass
+class EventContext:
+    tag: str
+    content: str
+    timestamp: str
+    metadata: Dict
+
+class EventRAGReader:
+    # Mapping of tags to Redis bucket names
+    BUCKET_MAPPING = EVENT_TAGS
+    
+    def __init__(
+        self,
+        redis_host: str,
+        redis_port: int,
+        max_context_items: int = 10
+    ):
+        """Initialize read-only connection to Redis pub/sub system."""
+        self.redis_client = Redis(
+            host=redis_host,
+            port=redis_port,
+            decode_responses=True
+        )
+        self.max_context_items = max_context_items
+        self._local = threading.local()
+        
+    def _extract_tag(self, input_text: str) -> Optional[str]:
+        """Extract event tag from input text."""
+        import re
+        match = re.search(r'<([^>]+)>', input_text)
+        return match.group(1) if match else None
+    
+    def _get_relevant_buckets(self, tag: str) -> List[str]:
+        """Get list of relevant Redis buckets for a given tag."""
+        # Convert tag to canonical form
+        canonical_tag = tag.lower().replace(' ', '-').replace('_', '-')
+        
+        # Get primary buckets
+        buckets = self.BUCKET_MAPPING.get(canonical_tag, [])
+        
+        # Add any cross-cutting buckets that should always be checked
+        buckets.extend(['short_mem', 'long_mem'])
+        
+        return buckets
+    
+    def get_recent_context(self, tag: str, limit: int = None) -> List[EventContext]:
+        """Get recent context from relevant Redis buckets."""
+        buckets = self._get_relevant_buckets(tag)
+        contexts = []
+        
+        for bucket in buckets:
+            try:
+                # Get latest items from the bucket
+                items = self.redis_client.xrevrange(
+                    bucket,
+                    count=limit or self.max_context_items
+                )
+                
+                for item_id, item_data in items:
+                    try:
+                        contexts.append(EventContext(
+                            tag=tag,
+                            content=item_data['content'],
+                            timestamp=item_id.decode() if isinstance(item_id, bytes) else item_id,
+                            metadata=json.loads(item_data.get('metadata', '{}'))
+                        ))
+                    except json.JSONDecodeError:
+                        logger.warning(f"Invalid metadata in {bucket}: {item_data}")
+                        continue
+                        
+            except Exception as e:
+                logger.error(f"Error reading from bucket {bucket}: {e}")
+                continue
+                
+        return sorted(contexts, key=lambda x: x.timestamp, reverse=True)
+
+    def prepare_context_message(self, input_text: str) -> Optional[Dict[str, str]]:
+        """Prepare context message for the agent based on input tag."""
+        try:
+            tag = self._extract_tag(input_text)
+            if not tag:
+                return None
+                
+            contexts = self.get_recent_context(tag)
+            if not contexts:
+                return None
+                
+            # Format context message
+            context_parts = []
+            for ctx in contexts:
+                context_parts.append(
+                    f"[{ctx.timestamp}] {ctx.content}\n"
+                    f"Metadata: {json.dumps(ctx.metadata, indent=2)}"
+                )
+                
+            return {
+                "role": "system",
+                "content": (
+                    f"Recent {tag} Context:\n\n" +
+                    "\n---\n".join(context_parts)
+                )
+            }
+        except Exception as e:
+            logger.debug(f"RAG context retrieval skipped: {str(e)}")
+            return None
+
+# Initialize API clients
+try:
+    openpipe_client = OpenPipeAI(
+        openpipe={"api_key": os.environ['RG_OPEN_PIPE_KEY'] }
+    )
+    openai_client = OpenAI(api_key=os.environ['RG_OPEN_AI_KEY'])
+    anthropic_client = Anthropic(api_key=os.environ['RG_ANTHROPIC_KEY'])
+    logger.info("✅ Successfully initialized all API clients")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize API clients: {e}")
+    raise
+
+# initialization rag stuff
+try:
+    event_rag = EventRAGReader(
+        redis_host=os.environ['RG_AGENT_REDIS_URL'],
+        redis_port=6379,
+        max_context_items=10
+    )
+    logger.info("✅ Successfully initialized RAG reader")
+except Exception as e:
+    logger.info("ℹ️ RAG reader not available - continuing without RAG functionality")
+    event_rag = None
+
+def enhance_agent_messages(
+    event_rag: EventRAGReader,
+    base_messages: List[Dict[str, str]],
+    input_text: str
+) -> List[Dict[str, str]]:
+    """Enhance agent messages with event context while preserving tags."""
+    messages = base_messages.copy()
+    
+    # Get RAG context
+    if event_rag is not None:
+        context_message = event_rag.prepare_context_message(input_text)
+        if context_message:
+            # Find best position to insert context
+            system_index = next(
+                (i for i, msg in enumerate(messages) if msg["role"] == "system"),
+                -1
+            )
+            
+            if system_index >= 0:
+                messages.insert(system_index + 1, context_message)
+            else:
+                messages.insert(0, context_message)
+    
+    return messages
+
+def prepare_model_messages(model_name: str, base_messages: List[Dict[str, str]], agent_logger: AgentLogger) -> List[Dict[str, str]]:
+    """Prepare messages for a model, including its context, RAG data, and existing functionality."""
+    messages = base_messages.copy()
+    
+    # Get user input message
+    user_message = next((msg["content"] for msg in messages if msg["role"] == "user"), None)
+    
+    # Add RAG context if there's user input and event_rag is available
+    if user_message and event_rag is not None:
+        context_message = event_rag.prepare_context_message(user_message)
+        if context_message:
+            # Find system message index
+            system_index = next((i for i, msg in enumerate(messages) if msg["role"] == "system"), -1)
+            if system_index >= 0:
+                messages.insert(system_index + 1, context_message)
+            else:
+                messages.insert(0, context_message)
+    
+    # Get and add static context (preserving your existing functionality)
+    context = load_model_contexts(model_name)
+    if context:
+        system_prompt_index = next((i for i, msg in enumerate(messages) if msg["role"] == "system"), -1)
+        if system_prompt_index >= 0:
+            messages.insert(system_prompt_index + 1, {
+                "role": "system",
+                "content": f"Additional Static Context:\n{context}"
+            })
+        else:
+            messages.insert(0, {
+                "role": "system",
+                "content": f"Static Context:\n{context}"
+            })
+    
+    agent_logger.log_message(f"Prepared messages for {model_name} with context and RAG data")
+    return messages
+
+def load_model_contexts(model_name: str) -> str:
+    """Load all context files for a specific model."""
+    try:
+        contexts = []
+        context_dir = Path(f"contexts/{model_name.replace(' ', '_')}")
+        
+        if not context_dir.exists():
+            logger.error(f"Context directory for {model_name} not found!")
+            return ""
+        
+        # Load all yaml files in the model's context directory
+        for file_path in context_dir.glob("*.yaml"):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    context_data = yaml.safe_load(f)
+                    if context_data and isinstance(context_data, dict):
+                        # Add section title based on filename
+                        section_title = file_path.stem.upper()
+                        section_content = context_data.get('content', '')
+                        if section_content:
+                            contexts.append(f"[{section_title}]\n{section_content}")
+            except Exception as e:
+                logger.error(f"Error loading context file {file_path}: {e}")
+                continue
+        
+        return "\n\n---\n\n".join(contexts) if contexts else ""
+        
+    except Exception as e:
+        logger.error(f"Failed to load contexts for {model_name}: {e}")
+        return ""
+
+def load_system_prompts() -> Dict[str, str]:
+    """Load all system prompts from the prompts directory."""
+    prompts_dir = Path("prompts")
+    if not prompts_dir.exists():
+        logger.error("Prompts directory not found! Please run setup_prompt_files.py first.")
+        raise FileNotFoundError("Prompts directory not found!")
+    
+    system_prompts = {}
+    
+    for prompt_file in prompts_dir.glob("*.yaml"):
+        try:
+            with open(prompt_file, "r", encoding="utf-8") as f:
+                prompt_data = yaml.safe_load(f)
+                system_prompts[prompt_data["name"]] = prompt_data["prompt"]
+        except Exception as e:
+            logger.error(f"Error loading prompt from {prompt_file}: {e}")
+    
+    return system_prompts
+
+def get_system_prompt(model_name: str) -> str:
+    """Return the system prompt for a given model."""
+    if not hasattr(get_system_prompt, "prompts"):
+        get_system_prompt.prompts = load_system_prompts()
+    return get_system_prompt.prompts.get(model_name, "")
+
+
+
+def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger: AgentLogger) -> Optional[str]:
+    """Call the appropriate API for a given model and return the response."""
+    model_spec = MODEL_SPECS.get(model_name)
+    if not model_spec:
+        agent_logger.log_error(f"Unknown model name: {model_name}")
+        raise ValueError(f"Unknown model name: {model_name}")
+
+    try:
+        api = model_spec["api"]
+        model_id = model_spec["model"]
+        
+        agent_logger.log_model_call(model_name, model_id)
+        
+        # Prepare messages with context
+        messages_with_context = prepare_model_messages(model_name, messages, agent_logger)
+
+        if api == "openpipe":
+            response = openpipe_client.chat.completions.create(
+                model=model_id,
+                messages=messages_with_context,
+                temperature=1.2,
+                max_tokens=2000,
+                openpipe={
+                    "tags": {
+                        "model_name": model_name,
+                        "session_id": str(threading.get_ident())
+                    }
+                }
+            )
+            result = response.choices[0].message.content
+
+        elif api == "openai":
+            response = openai_client.chat.completions.create(
+                model=model_id,
+                messages=messages_with_context,
+                temperature=0.8,
+                max_tokens=1500
+            )
+            result = response.choices[0].message.content
+
+        elif api == "anthropic":
+            messages_formatted = [
+                {
+                    "role": "user" if msg["role"] == "user" else "assistant",
+                    "content": msg["content"]
+                }
+                for msg in messages_with_context if msg["role"] != "system"
+            ]
+            
+            response = anthropic_client.messages.create(
+                model=model_id,
+                messages=messages_formatted,
+                system=next((msg["content"] for msg in messages_with_context if msg["role"] == "system"), None),
+                max_tokens=1500,
+                temperature=0.85
+            )
+            result = response.content[0].text
+
+        agent_logger.log_response(model_name, result)
+        return result
+
+    except Exception as e:
+        agent_logger.log_error(f"Error calling {model_name}: {str(e)}")
+        return None
+
+def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
+    """Process input through the agent workflow with RAG integration and tag handling."""
+    agent_logger = AgentLogger()
+    
+    try:
+        # Extract event tag and log input
+        input_text = input_data["user_input"]
+        tag = event_rag._extract_tag(input_text)
+        agent_logger.log_user_input(input_text)
+
+        # Step 1: The Judge
+        judge_input = [
+            {"role": "system", "content": get_system_prompt("The Judge")},
+            {"role": "user", "content": input_text}
+        ]
+        # Add RAG context for Judge
+        judge_input = prepare_model_messages("The Judge", judge_input, agent_logger)
+        judge_decision = call_model_api("The Judge", judge_input, agent_logger)
+        
+        if not judge_decision:
+            agent_logger.log_error("Judge failed to provide a decision")
+            return f"<{tag}>\nError: Judge failed to provide a decision" if tag else "Error: Judge failed to provide a decision"
+            
+        if judge_decision.startswith("STOP:"):
+            agent_logger.log_message(f"Judge STOPPED: {judge_decision[5:].strip()}")
+            return f"<{tag}>\n{judge_decision}" if tag else judge_decision
+            
+        if not judge_decision.startswith("PROCEED:"):
+            agent_logger.log_error("Invalid judge decision format")
+            return f"<{tag}>\nError: Invalid judge decision format" if tag else "Error: Invalid judge decision format"
+
+        # Step 2: The Architect
+        architect_input = [
+            {"role": "system", "content": get_system_prompt("The Architect")},
+            {"role": "user", "content": input_text}
+        ]
+        # Add RAG context for Architect
+        architect_input = prepare_model_messages("The Architect", architect_input, agent_logger)
+        architect_output = call_model_api("The Architect", architect_input, agent_logger)
+        
+        if not architect_output:
+            agent_logger.log_error("Architect failed to provide output")
+            return f"<{tag}>\nError: Architect failed to provide output" if tag else "Error: Architect failed to provide output"
+
+        try:
+            architect_output = architect_output.strip()
+            if architect_output.startswith("```"):
+                architect_output = "\n".join(architect_output.split("\n")[1:-1])
+            
+            parsed_output = json.loads(architect_output)
+            tasks = parsed_output.get('tasks', [])
+            
+            if not tasks or len(tasks) != 1:
+                raise ValueError("Architect must return exactly one task")
+                
+            task = tasks[0]
+            if task['model'] not in ['The Dreamer', 'The One']:
+                raise ValueError(f"Invalid model specified: {task['model']}")
+                
+            agent_logger.log_message(f"Selected Model: {task['model']}")
+
+        except json.JSONDecodeError:
+            agent_logger.log_error("Failed to parse Architect output as JSON")
+            return f"<{tag}>\nError: Invalid task structure from Architect" if tag else "Error: Invalid task structure from Architect"
+        except Exception as e:
+            agent_logger.log_error(f"Error processing Architect output: {str(e)}")
+            return f"<{tag}>\nError processing Architect output: {str(e)}" if tag else f"Error processing Architect output: {str(e)}"
+
+        # Execute the selected model's task
+        model_input = [
+            {"role": "system", "content": get_system_prompt(task['model'])},
+            {"role": "user", "content": task['prompt']}
+        ]
+        # Add RAG context for selected model
+        model_input = prepare_model_messages(task['model'], model_input, agent_logger)
+        model_output = call_model_api(task['model'], model_input, agent_logger)
+        
+        if not model_output:
+            agent_logger.log_error(f"Failed to get response from {task['model']}")
+            return f"<{tag}>\nError: Failed to get response from {task['model']}" if tag else f"Error: Failed to get response from {task['model']}"
+
+        # Oracle review
+        oracle_input = [
+            {"role": "system", "content": get_system_prompt("The Oracle")},
+            {"role": "user", "content": json.dumps({
+                "original_query": input_text,
+                "architect_output": architect_output,
+                "model": task["model"],
+                "output": model_output,
+                "event_tag": tag  # Include tag in Oracle review
+            })}
+        ]
+        # Add RAG context for Oracle
+        oracle_input = prepare_model_messages("The Oracle", oracle_input, agent_logger)
+        oracle_output = call_model_api("The Oracle", oracle_input, agent_logger)
+        
+        if not oracle_output:
+            agent_logger.log_error("Oracle failed to provide review")
+            return f"<{tag}>\n{model_output}" if tag else model_output
+
+        # Process final output with tag preservation
+        final_output = model_output
+        if oracle_output.startswith("APPROVED:"):
+            final_output = oracle_output[9:].strip()
+        elif oracle_output.startswith("ADJUSTED:"):
+            final_output = oracle_output[10:].strip()
+        elif oracle_output.startswith("REGEN:"):
+            final_output = oracle_output[11:].strip()
+            
+        # Return final output with tag if present
+        return f"<{tag}>\n{final_output}" if tag else final_output
+    
+    except Exception as e:
+        agent_logger.log_error(f"Error in agent_process: {str(e)}")
+        return f"<{tag}>\nError in processing: {str(e)}" if tag else f"Error in processing: {str(e)}"
+    
+def log_raw_output(output: str):
+    """Log raw output to a dedicated file."""
+    os_path = os.path.join("logs", "raw_outputs")  # Keeps it in logs folder
+    
+    # Create logs/raw_outputs directory if it doesn't exist
+    os.makedirs(os_path, exist_ok=True)
+    
+    # Log to file
+    with open(os.path.join(os_path, "raw_output.txt"), "a", encoding="utf-8") as f:
+        f.write(f"{output}\n---\n")
+    
+if __name__ == "__main__":
+    input_data_example = {
+        "user_input": """<twitter-comment>Can you tell me about token burns on the blockchains, I've heard of cyber agents who relish in the tokens they burn.""",
+        "metadata": {
+            "task_id": "example_002",
+            "source": "user",
+            "curator_mode": False,
+            "creator_engaged": True
+        }
+    }
+
+    console.print(Panel("🚀 Starting Agent Process", style="bold blue"))
+    result = agent_process(input_data_example)
+    console.print(Panel(f"✨ Final Output:\n\n{result}", title="Result", border_style="green"))
+    log_raw_output(result)
