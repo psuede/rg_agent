@@ -1,19 +1,38 @@
 
 services:
+  ai:
+    build: 
+      dockerfile: Dockerfile.dev
+      context: ./apps/ai
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/ai:/apps/ai
+    environment:
+      - ENV=development
+      - RG_AGENT_REDIS_URL=redis
+      - RG_OPEN_PIPE_KEY
+      - RG_OPEN_AI_KEY
+      - RG_ANTHROPIC_KEY
+    depends_on:
+      - postgres
+      - redis
 
-  rg_agent:
+  orchestrator:
     build:
       dockerfile: Dockerfile.dev
-      context: ./apps/agent
+      context: ./apps/orchestrator
     volumes:
-      - ./apps/agent/src:/apps/agent/src
+      - ./apps/orchestrator/src:/apps/orchestrator/src
     environment:
+      - RG_AGENT_AI_API_URL=http://ai:8000
       - RG_AGENT_POSTGRES_URL=postgres
       - RG_AGENT_POSTGRES_CREDENTIALS
       - RG_AGENT_REDIS_URL=redis
     depends_on:
       - postgres
       - redis
+      - ai
 
   telegramhandler:
     build:
@@ -24,29 +43,17 @@ services:
     environment:
       - RG_AGENT_POSTGRES_URL=postgres
       - RG_AGENT_POSTGRES_CREDENTIALS
-      - RG_AGENT_REDIS_URL=redis
+      - RG_AGENT_REDIS_URL=192.168.1.165:6379 #redis
       - TG_REAPER_API_STRING_SESSION
       - TG_REAPER_API_ID
       - TG_REAPER_API_HASH
       - TG_REAPER_ID
       - RG_TG_MAIN_CHAT
       - RG_TG_MAIN_CHAT_TEST
+      - RG_TG_BUY_BOT_ID
+      - RG_TG_BUY_BOT_ID_TEST
     depends_on:
       - postgres
-      - redis
-  redis:
-    image: redis:latest
-    build:
-      context: ./db/redis
-      dockerfile: Dockerfile
-    restart: always
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/root/redis
-    environment:
-      - REDIS_PORT=6379
-      - REDIS_DATABASES=16
 
   postgres:
     image: timescale/timescaledb-ha:pg16
@@ -64,7 +71,21 @@ services:
     ports:
       - "8081:8080"
     extra_hosts:
-      - "host.docker.internal:host-gateway" 
+      - "host.docker.internal:host-gateway"
+
+  redis:
+    image: redis:latest
+    build:
+      context: ./db/redis
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/root/redis
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
 
 volumes:
   postgres-data:

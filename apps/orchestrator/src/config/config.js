@@ -34,6 +34,13 @@ config.RG_AGENT_POSTGRES_DATABASE = get({
   default: "rg_agent_db"
 });
 
+config.RG_AGENT_AI_API_URL = get({
+  dev: null,
+  test: null,
+  prod: null,
+  default: process.env.RG_AGENT_AI_API_URL,
+});
+
 config.RG_AGENT_POSTGRES_URL = get({
   dev: null,
   test: null,
@@ -89,11 +96,4 @@ config.TG_REAPER_ID = get({
   test: null,
   prod: null,
   default: process.env.TG_REAPER_ID
-})
-
-config.BUY_BOT_ID = get({
-  dev: null,
-  test: process.env.RG_TG_BUY_BOT_ID_TEST,
-  prod: null,
-  default: process.env.RG_TG_BUY_BOT_ID
 })

@@ -10,6 +10,7 @@ export async function getRedisConnection() {
   let url = 'redis://' + config.RG_AGENT_REDIS_URL;
   redisConnection = createClient({ 
     url: url,
+    pingInterval: 5000,
     socket: {
       reconnectStrategy: function(retries) {
           if (retries > 20) {
@@ -22,9 +23,8 @@ export async function getRedisConnection() {
     }
   });
 
-  redisConnection.on('error', err => logger.error('Redis Client Error', err));
-  redisConnection.on('connect', async (client) => {
-  });
+  redisConnection.on('error', err => { logger.error('Redis Client Error', err) });
+  redisConnection.on('connect', async (client) => {});
 
   await redisConnection.connect();
 

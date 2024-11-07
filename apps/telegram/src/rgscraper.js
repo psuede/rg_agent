@@ -1,9 +1,10 @@
+import { logger } from './logger.js';
 import { NewMessage } from 'telegram/events/NewMessage.js';
 import { DeletedMessage } from "telegram/events/DeletedMessage.js";
-import { RG_MESSAGE_TO_REAPER } from "./config/eventkeys.js";
+import { RG_MESSAGE_TO_REAPER, RG_BUY_BOT_MESSAGE } from "./config/eventkeys.js";
 import { addTelegramMessageEntity, addTelegramUserIfNeeded, addTelegramMessage, getTelegramMessageEntity, getTelegramMessageChain, markDeleted } from './db/postgresdbhandler.js'
 import { config } from './config/config.js';
-import { logger } from './logger.js';
+
 
 const RG_CHAT_ROOMS = [
   {
@@ -26,14 +27,18 @@ export async function scrape(tgClient, redis) {
     if (event.message) {
       let message = event.message;
       let data = message.message;
-      let toReaper = await saveMessage(message, data, chatId, timestamp);
+      let savedMessage;
+      try {
+        savedMessage = await saveMessage(message, data, chatId, timestamp);
+      } catch(err) {
+        logger.error(err)
+      }
 
-      // is this a message to the reaper?
       let sender = await message.getSender();
       let userId = Number(sender.id);
-      if (toReaper && userId != config.TG_REAPER_ID) {
-        await redis.publish(config.RG_EVENT_KEY, JSON.stringify({ event: RG_MESSAGE_TO_REAPER, message: message }));
-      }
+      await handleReaperChat(userId, savedMessage, redis);
+      await handleBuy(userId, savedMessage, redis);
+
     }
 
   }, new NewMessage({}));
@@ -53,6 +58,24 @@ export async function scrape(tgClient, redis) {
     }
   }, new DeletedMessage({}));
 
+}
+
+async function handleReaperChat(senderid, message, redis) {
+  // is this a message to the reaper?
+  if (message && message.toReaper && senderid != config.TG_REAPER_ID) {
+    await redis.publish(config.RG_EVENT_KEY, 
+    JSON.stringify({event: RG_MESSAGE_TO_REAPER, ...message}));
+  }
+}
+
+async function handleBuy(senderid, message, redis) {
+  // is this a message to the reaper?
+  if (message && senderid == config.BUY_BOT_ID) {
+    let ethValue = getEthFromBuyText(message.content);
+    if(ethValue) {
+      await redis.publish(config.RG_EVENT_KEY, JSON.stringify({event: RG_BUY_BOT_MESSAGE, value: ethValue}));
+    }
+  }
 }
 
 function isPartOfGroup(id, groups) {
@@ -108,7 +131,7 @@ async function saveMessage(message, data, chatId, timestamp) {
   let msgChain = await getTelegramMessageChain(reaperMessageId);
   if (msgChain && msgChain.length > 0) {
     for (const msg of msgChain) {
-      let entity = await getTelegramMessageEntity(msg.messageid_reaper, config.TG_REAPER_ID);
+      let entity = await getTelegramMessageEntity(msg.messageid, config.TG_REAPER_ID);
       if (entity != null) {
         toReaper = true;
       }
@@ -116,7 +139,25 @@ async function saveMessage(message, data, chatId, timestamp) {
   }
 
   logger.info("New message added: " + data);
-  return toReaper;
+  return {
+    from : {
+      firstName: firstName,
+      lastName: lastName,
+      userName: userName
+    },
+    toReaper: toReaper,
+    content: data,
+    conversation: msgChain
+  };
+}
+
+function getEthFromBuyText(str) {
+  const regex = /\(([\d.]+)\s*ETH\)/i;
+  const match = str.match(regex);
+  if (match) {
+    return !Number.isNaN(match[1]) ? Number(match[1]) : 0;
+  }
+  return null;
 }
 
 function falseIfEmpty(value) {

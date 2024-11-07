@@ -38,11 +38,13 @@ async function addTelegramMessageEntity(messageId, entityId) {
 
 export async function getTelegramMessageChain(messageId) {
   let sql = `WITH RECURSIVE relationship_chain AS (
-    SELECT messageid_reaper, replyto_messageid_reaper 
-    FROM "TelegramMessage" 
+    SELECT tu.firstname, tu.lastname, tu.username, tm.content, tm.messageid_reaper, tm.replyto_messageid_reaper 
+    INNER JOIN "TelegramUser" tu ON tm.userid=tu.userid
+    FROM "TelegramMessage" tm
     WHERE messageid_reaper = ?
     UNION ALL
-    SELECT m.messageid_reaper, m.replyto_messageid_reaper 
+    SELECT tus.firstname, tus.lastname, tus.username, m.content m.messageid_reaper, m.replyto_messageid_reaper 
+    inner join "TelegramUser" tus on m.userid=tus.userid
     FROM "TelegramMessage" m
     INNER JOIN relationship_chain rc ON rc.replyto_messageid_reaper = m.messageid_reaper)
     SELECT * FROM relationship_chain`;

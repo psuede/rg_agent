@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+openai
+anthropic
+openpipe
+requests
+pyyaml
+rich
+redis

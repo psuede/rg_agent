@@ -13,6 +13,12 @@ from logger import AgentLogger, console, logger
 from redis import Redis
 from dataclasses import dataclass
 
+def extract_tag(input_text: str) -> Optional[str]:
+    """Extract event tag from input text."""
+    import re
+    match = re.search(r'<([^>]+)>', input_text)
+    return match.group(1) if match else None
+
 # Initialize MODEL_SPECS
 MODEL_SPECS = {
     "The Judge": {"api": "openai", "model": "gpt-3.5-turbo-0125"},
@@ -46,22 +52,18 @@ class EventRAGReader:
         self,
         redis_host: str,
         redis_port: int,
+        redis_password: str,
         max_context_items: int = 10
     ):
         """Initialize read-only connection to Redis pub/sub system."""
         self.redis_client = Redis(
             host=redis_host,
             port=redis_port,
+            password=redis_password,
             decode_responses=True
         )
         self.max_context_items = max_context_items
         self._local = threading.local()
-        
-    def _extract_tag(self, input_text: str) -> Optional[str]:
-        """Extract event tag from input text."""
-        import re
-        match = re.search(r'<([^>]+)>', input_text)
-        return match.group(1) if match else None
     
     def _get_relevant_buckets(self, tag: str) -> List[str]:
         """Get list of relevant Redis buckets for a given tag."""
@@ -106,7 +108,8 @@ class EventRAGReader:
                 continue
                 
         return sorted(contexts, key=lambda x: x.timestamp, reverse=True)
-
+    
+    
     def prepare_context_message(self, input_text: str) -> Optional[Dict[str, str]]:
         """Prepare context message for the agent based on input tag."""
         try:
@@ -152,8 +155,9 @@ except Exception as e:
 # initialization rag stuff
 try:
     event_rag = EventRAGReader(
-        redis_host=os.environ['RG_AGENT_REDIS_URL'],
+        redis_host="your_redis_host",
         redis_port=6379,
+        redis_password="your_redis_password",
         max_context_items=10
     )
     logger.info("✅ Successfully initialized RAG reader")
@@ -352,16 +356,29 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
     try:
         # Extract event tag and log input
         input_text = input_data["user_input"]
-        tag = event_rag._extract_tag(input_text)
+        # Use the standalone extract_tag function instead of depending on event_rag
+        tag = extract_tag(input_text)
         agent_logger.log_user_input(input_text)
+
+        # Get RAG context if available
+        rag_context = None
+        if event_rag is not None:
+            try:
+                rag_context = event_rag.prepare_context_message(input_text)
+            except Exception as e:
+                agent_logger.log_error(f"Error getting RAG context: {str(e)}")
+                # Continue without RAG context
 
         # Step 1: The Judge
         judge_input = [
             {"role": "system", "content": get_system_prompt("The Judge")},
             {"role": "user", "content": input_text}
         ]
-        # Add RAG context for Judge
-        judge_input = prepare_model_messages("The Judge", judge_input, agent_logger)
+        
+        # Add RAG context for Judge if available
+        if rag_context:
+            judge_input.insert(1, rag_context)
+            
         judge_decision = call_model_api("The Judge", judge_input, agent_logger)
         
         if not judge_decision:
@@ -381,8 +398,11 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             {"role": "system", "content": get_system_prompt("The Architect")},
             {"role": "user", "content": input_text}
         ]
-        # Add RAG context for Architect
-        architect_input = prepare_model_messages("The Architect", architect_input, agent_logger)
+        
+        # Add RAG context for Architect if available
+        if rag_context:
+            architect_input.insert(1, rag_context)
+            
         architect_output = call_model_api("The Architect", architect_input, agent_logger)
         
         if not architect_output:
@@ -418,8 +438,11 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             {"role": "system", "content": get_system_prompt(task['model'])},
             {"role": "user", "content": task['prompt']}
         ]
-        # Add RAG context for selected model
-        model_input = prepare_model_messages(task['model'], model_input, agent_logger)
+        
+        # Add RAG context for selected model if available
+        if rag_context:
+            model_input.insert(1, rag_context)
+            
         model_output = call_model_api(task['model'], model_input, agent_logger)
         
         if not model_output:
@@ -434,11 +457,14 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
                 "architect_output": architect_output,
                 "model": task["model"],
                 "output": model_output,
-                "event_tag": tag  # Include tag in Oracle review
+                "event_tag": tag
             })}
         ]
-        # Add RAG context for Oracle
-        oracle_input = prepare_model_messages("The Oracle", oracle_input, agent_logger)
+        
+        # Add RAG context for Oracle if available
+        if rag_context:
+            oracle_input.insert(1, rag_context)
+            
         oracle_output = call_model_api("The Oracle", oracle_input, agent_logger)
         
         if not oracle_output:
@@ -460,7 +486,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
     except Exception as e:
         agent_logger.log_error(f"Error in agent_process: {str(e)}")
         return f"<{tag}>\nError in processing: {str(e)}" if tag else f"Error in processing: {str(e)}"
-    
+        
 def log_raw_output(output: str):
     """Log raw output to a dedicated file."""
     os_path = os.path.join("logs", "raw_outputs")  # Keeps it in logs folder

@@ -22,3 +22,9 @@ Expected format for the judge
 }
 
 */
+
+export async function manageChat(message, redis) {
+  console.log(message)
+  console.log("manageChat!")
+
+}
