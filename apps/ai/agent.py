@@ -52,14 +52,12 @@ class EventRAGReader:
         self,
         redis_host: str,
         redis_port: int,
-        redis_password: str,
         max_context_items: int = 10
     ):
         """Initialize read-only connection to Redis pub/sub system."""
         self.redis_client = Redis(
             host=redis_host,
             port=redis_port,
-            password=redis_password,
             decode_responses=True
         )
         self.max_context_items = max_context_items
@@ -157,7 +155,6 @@ try:
     event_rag = EventRAGReader(
         redis_host="your_redis_host",
         redis_port=6379,
-        redis_password="your_redis_password",
         max_context_items=10
     )
     logger.info("✅ Successfully initialized RAG reader")
@@ -357,7 +354,6 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Extract event tag and log input
         input_text = input_data["user_input"]
         # Use the standalone extract_tag function instead of depending on event_rag
-        tag = extract_tag(input_text)
         agent_logger.log_user_input(input_text)
 
         # Get RAG context if available
@@ -383,15 +379,15 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         
         if not judge_decision:
             agent_logger.log_error("Judge failed to provide a decision")
-            return f"<{tag}>\nError: Judge failed to provide a decision" if tag else "Error: Judge failed to provide a decision"
+            return f"Error: Judge failed to provide a decision"
             
         if judge_decision.startswith("STOP:"):
             agent_logger.log_message(f"Judge STOPPED: {judge_decision[5:].strip()}")
-            return f"<{tag}>\n{judge_decision}" if tag else judge_decision
+            return judge_decision
             
         if not judge_decision.startswith("PROCEED:"):
             agent_logger.log_error("Invalid judge decision format")
-            return f"<{tag}>\nError: Invalid judge decision format" if tag else "Error: Invalid judge decision format"
+            return f"Error: Invalid judge decision format"
 
         # Step 2: The Architect
         architect_input = [
@@ -407,7 +403,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         
         if not architect_output:
             agent_logger.log_error("Architect failed to provide output")
-            return f"<{tag}>\nError: Architect failed to provide output" if tag else "Error: Architect failed to provide output"
+            return f"Error: Architect failed to provide output"
 
         try:
             architect_output = architect_output.strip()
@@ -428,10 +424,10 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
         except json.JSONDecodeError:
             agent_logger.log_error("Failed to parse Architect output as JSON")
-            return f"<{tag}>\nError: Invalid task structure from Architect" if tag else "Error: Invalid task structure from Architect"
+            return f"Error: Invalid task structure from Architect"
         except Exception as e:
             agent_logger.log_error(f"Error processing Architect output: {str(e)}")
-            return f"<{tag}>\nError processing Architect output: {str(e)}" if tag else f"Error processing Architect output: {str(e)}"
+            return f"Error processing Architect output: {str(e)}"
 
         # Execute the selected model's task
         model_input = [
@@ -447,7 +443,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         
         if not model_output:
             agent_logger.log_error(f"Failed to get response from {task['model']}")
-            return f"<{tag}>\nError: Failed to get response from {task['model']}" if tag else f"Error: Failed to get response from {task['model']}"
+            return f"Error: Failed to get response from {task['model']}"
 
         # Oracle review
         oracle_input = [
@@ -456,8 +452,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
                 "original_query": input_text,
                 "architect_output": architect_output,
                 "model": task["model"],
-                "output": model_output,
-                "event_tag": tag
+                "output": model_output
             })}
         ]
         
@@ -480,12 +475,12 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         elif oracle_output.startswith("REGEN:"):
             final_output = oracle_output[11:].strip()
             
-        # Return final output with tag if present
-        return f"<{tag}>\n{final_output}" if tag else final_output
+        # Return final output with tag if present, remove the leading and trailing " character
+        return final_output[1:-1]
     
     except Exception as e:
         agent_logger.log_error(f"Error in agent_process: {str(e)}")
-        return f"<{tag}>\nError in processing: {str(e)}" if tag else f"Error in processing: {str(e)}"
+        return f"Error in processing: {str(e)}"
         
 def log_raw_output(output: str):
     """Log raw output to a dedicated file."""
