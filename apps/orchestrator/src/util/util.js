@@ -1,7 +1,10 @@
 import { config } from './../config/config.js';
 import { logger } from './../logger.js';
 
-export async function post(type, data) {
+export const AI_STATUS_FAIL = "KO";
+export const AI_STATUS_SUCCESS = "OK";
+
+export async function sendPrompt(type, data) {
   let prompt = {
     user_input : data,
     prompt_type : type
@@ -13,6 +16,16 @@ export async function post(type, data) {
           headers: { 'Content-Type':'application/json' },
           body: JSON.stringify(prompt),
       });
+      return await req.json();
+  } catch(err) {
+      logger.error(`ERROR: ${err}`);
+  }
+}
+
+export async function sendGenerationRequest(type) {
+  try {
+      // Create request to api service
+      const req = await fetch(config.RG_AGENT_AI_API_URL+"/generatememory/"+type);
       return await req.json();
   } catch(err) {
       logger.error(`ERROR: ${err}`);

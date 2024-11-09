@@ -16,9 +16,9 @@ const RG_CHAT_ROOMS = [
 // lock message patterns
 const walletLockedIdentifier = "wallet.locked";
 const addressRegex = /0x[a-fA-F0-9]{40}/;
-const rgRegex = /(\d{1,3}(?:,\d{3})*)\s*RG/;
-const ethRegex = /(\d+(\.\d+)?)\s*ETH/;
-const usdRegex = /\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/;
+const rgRegex = /(\d+(?:,\d+)*)\s*RG/
+const ethRegex = /(\d+(?:.\d+)*)\s*ETH/;
+const usdRegex = /\$(\d+(?:,\d+)*)/;
 const supplyRegex = /supply_out_of_circulation:\s*([\d.]+)%/;
 
 export async function scrape(tgClient, redis) {
@@ -84,9 +84,7 @@ function isLockMessage(msg) {
 
 async function handleLock(senderid, message, redis) {
   // is this a message to the reaper?
-  console.log("a")
   if (message /*&& senderid == config.RG_TG_REAPERBOT_ID*/ && isLockMessage(message)) {
-    console.log("b")
     // extract wallet address, rg amount, eth amount, usd amount, percentage locked... if instareapok
     let text = message.content;
     
@@ -100,13 +98,11 @@ async function handleLock(senderid, message, redis) {
     // Extracted values
     const address = addressMatch ? addressMatch[0] : null;
     const rgValue = rgMatch ? rgMatch[1].replace(/,/g, '') : null;
-    const ethValue = ethMatch ? ethMatch[1] : null;
+    const ethValue = ethMatch ? ethMatch[1].replace(/,/g, '') : null;
     const usdValue = usdMatch ? usdMatch[1].replace(/,/g, '') : null;
-    const supplyValue = supplyMatch ? supplyMatch[1] : null;
-    console.log("yoo")
+    const supplyValue = supplyMatch ? supplyMatch[1].replace(/,/g, '') : null;
             
     if(address && rgValue && ethValue && usdValue) {
-      console.log("aa")
       await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
         { event: RG_LOCK_MESSAGE, 
           address: address,

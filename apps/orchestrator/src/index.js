@@ -21,3 +21,4 @@ await redis.subscribe(config.RG_EVENT_KEY, async (message) => {
   }
 });
 
+

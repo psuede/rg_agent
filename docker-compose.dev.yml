@@ -54,7 +54,6 @@ services:
       - RG_TG_BUY_BOT_ID_TEST
       - RG_TG_REAPERBOT_ID_TEST,
       - RG_TG_REAPERBOT_ID
-
     depends_on:
       - postgres
 
@@ -85,7 +84,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/root/redis
+      - redis-data:/data
     environment:
       - REDIS_PORT=6379
       - REDIS_DATABASES=16

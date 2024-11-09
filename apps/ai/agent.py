@@ -12,7 +12,7 @@ from rich.panel import Panel
 from logger import AgentLogger, console, logger
 from redis import Redis
 from dataclasses import dataclass
-from promptenum import PromptType
+from agenttypes import PromptType, MemoryGeneration
 
 with open('config.json', 'r') as file:
     config = json.load(file)
@@ -37,10 +37,10 @@ MODEL_SPECS = {
 
 # Define your event tags and their corresponding Redis buckets
 EVENT_TAGS = {
-    PromptType.BUY: [current_config['BUY_BUCKET_KEY']],
-    PromptType.LOCK: [current_config['LOCK_BUCKET_KEY']],
-    PromptType.TWEET: [current_config['TWEET_BUCKET_KEY']],
-    PromptType.CHAT: [current_config['CHAT_BUCKET_KEY']],
+    PromptType.BUY: current_config['BUY_BUCKET_KEY'],
+    PromptType.LOCK: current_config['LOCK_BUCKET_KEY'],
+    PromptType.TWEET: current_config['TWEET_BUCKET_KEY'],
+    PromptType.CHAT: current_config['CHAT_BUCKET_KEY'],
 }
 
 @dataclass
@@ -68,13 +68,28 @@ class EventRAGReader:
         self.max_context_items = max_context_items
         self._local = threading.local()
     
+    def get_bucket_memory(self, memory_type: PromptType) -> List[str]:
+        bucket = self.BUCKET_MAPPING.get(memory_type)
+        bucket_items = self.redis_client.xrange(bucket, min='-', max='+')
+        memory = ""
+        for item_id, item_data in bucket_items:
+            memory += item_data['output']
+            memory += "\n"
+
+        return memory
+
     def _get_relevant_buckets(self, prompt_type: PromptType) -> List[str]:
         """Get list of relevant Redis buckets for a given tag."""
         # Get primary buckets
-        bucket = self.BUCKET_MAPPING.get(prompt_type)        
+        bucket = self.BUCKET_MAPPING.get(prompt_type)
+        if bucket == None:
+          return
+        
+        buckets = [bucket]
+
         # Add any cross-cutting buckets that should always be checked
-        #buckets.extend(['short_mem', 'long_mem'])
-        return bucket
+        buckets.extend([current_config['LONG_TERM_MEMORY_KEY']])
+        return buckets
     
     def get_recent_context(self, prompt_type: PromptType, limit: int = None) -> List[EventContext]:
         """Get recent context from relevant Redis buckets."""
@@ -84,8 +99,8 @@ class EventRAGReader:
         for bucket in buckets:
             try:
                 # Get latest items from the bucket
-                items = self.redis_client.xrange(bucket, min='-', max='+')
-
+                                   
+                items = self.redis_client.xrange(bucket, min='+', max='-') if bucket != current_config['LONG_TERM_MEMORY_KEY'] else self.redis_client.xrange(bucket, min='+', max='-', count=current_config['LONG_TERM_MEMORY_COUNT'])
                 for item_id, item_data in items:
                     try:
                         contexts.append(EventContext(
@@ -272,8 +287,6 @@ def get_system_prompt(model_name: str) -> str:
         get_system_prompt.prompts = load_system_prompts()
     return get_system_prompt.prompts.get(model_name, "")
 
-
-
 def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger: AgentLogger) -> Optional[str]:
     """Call the appropriate API for a given model and return the response."""
     model_spec = MODEL_SPECS.get(model_name)
@@ -289,6 +302,7 @@ def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger
         
         # Prepare messages with context
         messages_with_context = prepare_model_messages(model_name, messages, agent_logger)
+        agent_logger.log_message(f"Prompt: {messages_with_context}")
 
         if api == "openpipe":
             response = openpipe_client.chat.completions.create(
@@ -368,20 +382,20 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Add RAG context for Judge if available
         if rag_context:
             judge_input.insert(1, rag_context)
-            
+        
         judge_decision = call_model_api("The Judge", judge_input, agent_logger)
         
         if not judge_decision:
             agent_logger.log_error("Judge failed to provide a decision")
-            return f"Error: Judge failed to provide a decision"
+            return { "status": "KO", "message": "Judge failed to provide a decision" }
             
         if judge_decision.startswith("STOP:"):
             agent_logger.log_message(f"Judge STOPPED: {judge_decision[5:].strip()}")
-            return judge_decision
+            return { "status": "KO", "message": "Judge stopped" }
             
         if not judge_decision.startswith("PROCEED:"):
             agent_logger.log_error("Invalid judge decision format")
-            return f"Error: Invalid judge decision format"
+            return { "status": "KO", "message": "Invalid judge decision format" }
 
         # Step 2: The Architect
         architect_input = [
@@ -392,12 +406,10 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Add RAG context for Architect if available
         if rag_context:
             architect_input.insert(1, rag_context)
-            
         architect_output = call_model_api("The Architect", architect_input, agent_logger)
-        
         if not architect_output:
             agent_logger.log_error("Architect failed to provide output")
-            return f"Error: Architect failed to provide output"
+            return { "status": "KO", "message": "Architect failed to provide output" }
 
         try:
             architect_output = architect_output.strip()
@@ -418,10 +430,10 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
         except json.JSONDecodeError:
             agent_logger.log_error("Failed to parse Architect output as JSON")
-            return f"Error: Invalid task structure from Architect"
+            return { "status": "KO", "message": "Invalid task structure from Architect" }
         except Exception as e:
             agent_logger.log_error(f"Error processing Architect output: {str(e)}")
-            return f"Error processing Architect output: {str(e)}"
+            return { "status": "KO", "message": "Error processing Architect output" }
 
         # Execute the selected model's task
         model_input = [
@@ -437,7 +449,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         
         if not model_output:
             agent_logger.log_error(f"Failed to get response from {task['model']}")
-            return f"Error: Failed to get response from {task['model']}"
+            return { "status": "KO", "message": "Failed to get response from {task['model']}" }
 
         # Oracle review
         oracle_input = [
@@ -458,7 +470,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         
         if not oracle_output:
             agent_logger.log_error("Oracle failed to provide review")
-            return model_output
+            return { "status": "KO", "message": "Oracle failed to provide review" }
 
         # Process final output with tag preservation
         final_output = model_output
@@ -469,12 +481,29 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         elif oracle_output.startswith("REGEN:"):
             final_output = oracle_output[11:].strip()
             
-        # Return final output with tag if present, remove the leading and trailing " character
-        return final_output[1:-1]
+        # Return final output with tag if present, remove the leading and trailing " character  
+        return { "status": "OK", "message": final_output[1:-1] }
     
     except Exception as e:
         agent_logger.log_error(f"Error in agent_process: {str(e)}")
-        return f"Error in processing: {str(e)}"
+        return { "status": "KO", "message": "Internal error" }
+    
+def agent_generate_memory(generation_request: PromptType) -> str:
+    agent_logger = AgentLogger()   
+    try:
+        memory_items = event_rag.get_bucket_memory(generation_request)
+
+        old_one_input = [
+            {"role": "system", "content": get_system_prompt("The Old One")},
+            {"role": "user", "content": memory_items}
+        ]
+
+        summary = call_model_api("The One", old_one_input, agent_logger)
+        return { "status": "OK", "summary": summary }
+        
+    except Exception as e:
+        agent_logger.log_error(f"Error in agent_generate_memory: {str(e)}")
+        return { "status": "KO", "message": "Internal error" }
         
 def log_raw_output(output: str):
     """Log raw output to a dedicated file."""
