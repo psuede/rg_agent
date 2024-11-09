@@ -17,6 +17,7 @@ await redis.subscribe(config.RG_EVENT_KEY, async (message) => {
     } catch (err) {
       logger.error("RG Agent redis. Error parsing json on message: " + message);
       logger.error(err)
+      console.log(err)
     }
   }
 });

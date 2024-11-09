@@ -10,6 +10,10 @@ const RG_CHAT_ROOMS = [
   {
     name: "RG_MainChat",
     chatId: config.RG_TG_MAIN_CHAT
+  },
+  {
+    name: "RG_TestChat",
+    chatId: config.RG_TG_TEST_CHAT
   }
 ]
 
@@ -195,7 +199,8 @@ export async function saveMessage(message, data, chatId, timestamp) {
     from : {
       firstName: firstName,
       lastName: lastName,
-      userName: userName
+      userName: userName,
+      userId: userId
     },
     toReaper: toReaper,
     content: data,

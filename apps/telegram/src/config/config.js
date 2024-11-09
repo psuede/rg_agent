@@ -83,6 +83,13 @@ config.RG_TG_MAIN_CHAT = get({
   default: process.env.RG_TG_MAIN_CHAT
 })
 
+config.RG_TG_TEST_CHAT = get({
+  dev: null,
+  test: null,
+  prod: null,
+  default: process.env.RG_TG_MAIN_CHAT_TEST
+})
+
 config.TG_REAPER_ID = get({
   dev: null,
   test: null,

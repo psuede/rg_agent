@@ -1,8 +1,9 @@
 import { config } from './../config/config.js';
+import knex from 'knex'
 
 let connectionString = 'postgres://' + config.RG_AGENT_POSTGRES_CREDENTIALS + "@" + config.RG_AGENT_POSTGRES_URL + "/" + config.RG_AGENT_POSTGRES_DATABASE;
 
-const db = require('knex')({
+const db = knex({
   client: 'pg',
   connection: connectionString
 });
@@ -50,6 +51,11 @@ export async function getTelegramMessageChain(messageId) {
     SELECT * FROM relationship_chain`;
   let res = await db.raw(sql, [messageId]);
   return res && res.rows.length > 0 ? res.rows : null;
+}
+
+export async function canInteract(userid) {
+  let res = await db.raw(`SELECT caninteract FROM "UserSettings" WHERE userid = ? LIMIT 1`, [userid]);
+  return res && res.rows.length > 0 ? res.rows[0].caninteract : false;
 }
 
 async function getTelegramMessageEntity(messageid, entityId) {

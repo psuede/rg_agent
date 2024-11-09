@@ -1,7 +1,7 @@
 # Byte-compiled / optimized / DLL files
 logs
-test/log.html
-test/report.html
+test/*.html
+test/*.xml
 __pycache__/
 *.py[cod]
 *$py.class
