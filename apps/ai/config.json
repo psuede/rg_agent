@@ -1,0 +1,15 @@
+
+{
+  "development": {
+      "BUY_BUCKET_KEY": "test-buy",
+      "LOCK_BUCKET_KEY": "test-lock",
+      "TWEET_BUCKET_KEY": "test-tweet",
+      "CHAT_BUCKET_KEY": "test-chat"
+  },
+  "production": {
+      "BUY_BUCKET_KEY": "buy",
+      "LOCK_BUCKET_KEY": "lock",
+      "TWEET_BUCKET_KEY": "tweet",
+      "CHAT_BUCKET_KEY": "chat"
+  }
+}

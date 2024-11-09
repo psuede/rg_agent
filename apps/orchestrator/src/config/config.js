@@ -20,6 +20,55 @@ config.NAME = {
 
 export const config = {};
 
+config.RG_BUY_MEMORY_BUCKET = get({
+  dev: null,
+  test: "test-buy",
+  prod: null,
+  default: "buy"
+});
+
+config.RG_BUY_MEMORY_BUCKET_MAX_SIZE = get({
+  dev: null,
+  test: 4,
+  prod: null,
+  default: 25
+});
+
+config.RG_BUY_MEMORY_BUCKET_MIN_SIZE = get({
+  dev: null,
+  test: 2,
+  prod: null,
+  default: 5
+});
+
+config.RG_CHAT_MEMORY_BUCKET = get({
+  dev: null,
+  test: "test-chat",
+  prod: null,
+  default: "chat"
+});
+
+config.RG_LOCK_MEMORY_BUCKET = get({
+  dev: null,
+  test: "test-lock",
+  prod: null,
+  default: "lock"
+});
+
+config.RG_TWEET_MEMORY_BUCKET = get({
+  dev: null,
+  test: "test-tweet",
+  prod: null,
+  default: "tweet"
+});
+
+config.RG_LONGTERM_MEMORY_BUCKET = get({
+  dev: null,
+  test: "test-longterm",
+  prod: null,
+  default: "longterm"
+});
+
 config.RG_EVENT_KEY = get({
   dev: null,
   test: "test_rg_event",

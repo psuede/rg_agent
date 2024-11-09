@@ -1,9 +1,10 @@
 import { config } from './../config/config.js';
 import { logger } from './../logger.js';
 
-export async function post(data) {
+export async function post(type, data) {
   let prompt = {
-    user_input : data
+    user_input : data,
+    prompt_type : type
   }
   try {
       // Create request to api service
@@ -16,4 +17,23 @@ export async function post(data) {
   } catch(err) {
       logger.error(`ERROR: ${err}`);
   }
+}
+
+export function getPrompt(amount, promptMatrix) {
+  let situation;
+  for(let i=0; i<promptMatrix.length; i++) {
+    let promptSituation = promptMatrix[i];
+    if(amount < promptSituation.maxAmount || i==(promptMatrix.length-1)) {
+      situation = promptSituation;
+      break;
+    }
+  }
+  if(!situation) {
+    return;
+  }
+  return situation.prompts[randomNumber(situation.prompts.length-1)];
+}
+
+function randomNumber(max) {
+  return Math.floor(Math.random() * (max + 1));
 }

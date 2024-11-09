@@ -1,5 +1,9 @@
 import { config } from './../config/config.js';
 import { post } from './../util/util.js';
+import { RG_SEND_TG_BUY_REACTION } from './../config/eventkeys.js';
+import { BUY_PROMPT, BUY_PROMPTS } from './baseprompts.js';
+import { getPrompt } from './../util/util.js';
+import { BUY_BUCKET, addToBucket } from '../memorymanager.js';
 
 /*
 Expected format for the judge
@@ -9,18 +13,19 @@ Expected format for the judge
 }
 */
 
-export async function manageBuy(message, redis) {
-  console.log(message)
-  console.log("manage buy!")
-  console.log(config.RG_AGENT_AI_API_URL)
+export async function manageBuy(msg, redis) {
 
-  let prompt = "<buy> Someone just bought 1 ETH of RG, which is a significant amount, what do you as the Reaper think about that?";
-  let res = await post(prompt)
-  if(res && res.status == 200) {
-    let aiReply = await res.json();
-    console.log(aiReply);
+  let prompt = getPrompt(Number(msg.value), BUY_PROMPTS);
+
+  
+  let res = await post(BUY_PROMPT, prompt)
+  if(res) {
+    addToBucket(BUY_BUCKET, res.message, redis);
+    await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
+      { event: RG_SEND_TG_BUY_REACTION, 
+        message: res.message,
+        replyTo: msg.messageid
+      }));
   }
-  console.log("ehh")
-//  console.log(res)
 
 }

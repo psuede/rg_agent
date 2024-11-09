@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.panel import Panel
@@ -9,12 +10,15 @@ from datetime import datetime
 console = Console()
 Path("logs").mkdir(exist_ok=True)
 
+handler = RotatingFileHandler('logs/agent.log', maxBytes=5*1024*1024, backupCount=5)
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(message)s",
     handlers=[
         RichHandler(rich_tracebacks=True, console=console),
-        logging.FileHandler(f'logs/agent_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+        handler
     ]
 )
 

@@ -12,6 +12,13 @@ from rich.panel import Panel
 from logger import AgentLogger, console, logger
 from redis import Redis
 from dataclasses import dataclass
+from promptenum import PromptType
+
+with open('config.json', 'r') as file:
+    config = json.load(file)
+
+env = os.getenv('ENV', 'development')
+current_config = config.get(env)
 
 def extract_tag(input_text: str) -> Optional[str]:
     """Extract event tag from input text."""
@@ -30,16 +37,14 @@ MODEL_SPECS = {
 
 # Define your event tags and their corresponding Redis buckets
 EVENT_TAGS = {
-    "on-chain-buy": ["buy_transactions"],
-    "on-chain-lock": ["lock_transactions"],
-    "twitter-comment": ["twitter_comments"],
-    "twitter-tweet": ["twitter_tweets"],
-    "telegram-curator": ["curator_inputs"]
+    PromptType.BUY: [current_config['BUY_BUCKET_KEY']],
+    PromptType.LOCK: [current_config['LOCK_BUCKET_KEY']],
+    PromptType.TWEET: [current_config['TWEET_BUCKET_KEY']],
+    PromptType.CHAT: [current_config['CHAT_BUCKET_KEY']],
 }
 
 @dataclass
 class EventContext:
-    tag: str
     content: str
     timestamp: str
     metadata: Dict
@@ -63,37 +68,28 @@ class EventRAGReader:
         self.max_context_items = max_context_items
         self._local = threading.local()
     
-    def _get_relevant_buckets(self, tag: str) -> List[str]:
+    def _get_relevant_buckets(self, prompt_type: PromptType) -> List[str]:
         """Get list of relevant Redis buckets for a given tag."""
-        # Convert tag to canonical form
-        canonical_tag = tag.lower().replace(' ', '-').replace('_', '-')
-        
         # Get primary buckets
-        buckets = self.BUCKET_MAPPING.get(canonical_tag, [])
-        
+        bucket = self.BUCKET_MAPPING.get(prompt_type)        
         # Add any cross-cutting buckets that should always be checked
-        buckets.extend(['short_mem', 'long_mem'])
-        
-        return buckets
+        #buckets.extend(['short_mem', 'long_mem'])
+        return bucket
     
-    def get_recent_context(self, tag: str, limit: int = None) -> List[EventContext]:
+    def get_recent_context(self, prompt_type: PromptType, limit: int = None) -> List[EventContext]:
         """Get recent context from relevant Redis buckets."""
-        buckets = self._get_relevant_buckets(tag)
+        buckets = self._get_relevant_buckets(prompt_type)
         contexts = []
         
         for bucket in buckets:
             try:
                 # Get latest items from the bucket
-                items = self.redis_client.xrevrange(
-                    bucket,
-                    count=limit or self.max_context_items
-                )
-                
+                items = self.redis_client.xrange(bucket, min='-', max='+')
+
                 for item_id, item_data in items:
                     try:
                         contexts.append(EventContext(
-                            tag=tag,
-                            content=item_data['content'],
+                            content=item_data['output'],
                             timestamp=item_id.decode() if isinstance(item_id, bytes) else item_id,
                             metadata=json.loads(item_data.get('metadata', '{}'))
                         ))
@@ -108,14 +104,11 @@ class EventRAGReader:
         return sorted(contexts, key=lambda x: x.timestamp, reverse=True)
     
     
-    def prepare_context_message(self, input_text: str) -> Optional[Dict[str, str]]:
+    def prepare_context_message(self, prompt_type: PromptType) -> Optional[Dict[str, str]]:
         """Prepare context message for the agent based on input tag."""
-        try:
-            tag = self._extract_tag(input_text)
-            if not tag:
-                return None
-                
-            contexts = self.get_recent_context(tag)
+        try:               
+            contexts = self.get_recent_context(prompt_type)
+
             if not contexts:
                 return None
                 
@@ -130,7 +123,7 @@ class EventRAGReader:
             return {
                 "role": "system",
                 "content": (
-                    f"Recent {tag} Context:\n\n" +
+                    f"Recent {prompt_type.value} Context:\n\n" +
                     "\n---\n".join(context_parts)
                 )
             }
@@ -153,7 +146,7 @@ except Exception as e:
 # initialization rag stuff
 try:
     event_rag = EventRAGReader(
-        redis_host="your_redis_host",
+        redis_host=os.environ['RG_AGENT_REDIS_URL'],
         redis_port=6379,
         max_context_items=10
     )
@@ -353,6 +346,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
     try:
         # Extract event tag and log input
         input_text = input_data["user_input"]
+        prompt_type = input_data["metadata"]['prompt_type']
         # Use the standalone extract_tag function instead of depending on event_rag
         agent_logger.log_user_input(input_text)
 
@@ -360,7 +354,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         rag_context = None
         if event_rag is not None:
             try:
-                rag_context = event_rag.prepare_context_message(input_text)
+                rag_context = event_rag.prepare_context_message(prompt_type)
             except Exception as e:
                 agent_logger.log_error(f"Error getting RAG context: {str(e)}")
                 # Continue without RAG context
@@ -464,7 +458,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         
         if not oracle_output:
             agent_logger.log_error("Oracle failed to provide review")
-            return f"<{tag}>\n{model_output}" if tag else model_output
+            return model_output
 
         # Process final output with tag preservation
         final_output = model_output

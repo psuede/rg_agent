@@ -43,7 +43,7 @@ services:
     environment:
       - RG_AGENT_POSTGRES_URL=postgres
       - RG_AGENT_POSTGRES_CREDENTIALS
-      - RG_AGENT_REDIS_URL=192.168.1.165:6379 #redis
+      - RG_AGENT_REDIS_URL=redis
       - TG_REAPER_API_STRING_SESSION
       - TG_REAPER_API_ID
       - TG_REAPER_API_HASH
@@ -52,6 +52,9 @@ services:
       - RG_TG_MAIN_CHAT_TEST
       - RG_TG_BUY_BOT_ID
       - RG_TG_BUY_BOT_ID_TEST
+      - RG_TG_REAPERBOT_ID_TEST,
+      - RG_TG_REAPERBOT_ID
+
     depends_on:
       - postgres
 
@@ -90,9 +93,3 @@ services:
 volumes:
   postgres-data:
   redis-data:
-
-
-# environment variables to be used later
-# RG_AGENT_POSTGRES_PASSWORD < the "rg_agent" postgres database user password 
-
-

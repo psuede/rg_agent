@@ -55,7 +55,6 @@ config.RG_AGENT_REDIS_URL = get({
   default: process.env.RG_AGENT_REDIS_URL
 });
 
-
 config.TG_REAPER_API_STRING_SESSION = get({
   dev: null,
   test: null,
@@ -97,3 +96,10 @@ config.BUY_BOT_ID = get({
   prod: null,
   default: process.env.RG_TG_BUY_BOT_ID
 })
+
+config.RG_TG_REAPERBOT_ID = {
+  dev: null,
+  test: process.env.RG_TG_REAPERBOT_ID_TEST,
+  prod: null,
+  default: process.env.RG_TG_REAPERBOT_ID
+}

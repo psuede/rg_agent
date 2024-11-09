@@ -1,71 +1,57 @@
 
 // Concept: Store the very latest up to date memory in redis
-const { logger } = require('./../logger.js');
-const { RG_EVENT_KEY, RG_BUY_EVENT, RG_CHAT_EVENT, RG_START_AI, RG_STOP_AI, RG_DO_REFLECTION, RG_REAP_EVENT, RG_INSTAREAP_EVENT, RG_MANUAL_NEXT_EVENT, RG_REACT_ON_NEXT } = require('./../static.js');
+import { config } from './config/config.js';
+import { logger } from './logger.js';
 
 // short-term
+export const CHAT_BUCKET = {
+  key: config.RG_CHAT_MEMORY_BUCKET,
+  maxSize: 75,
+  minSize: 10
+}
 
-let mem = {
-  chatBucket: {
-    maxSize: 75,
-    minSize: 10,
-    items: []
-  },
+export const BUY_BUCKET = {
+  key: config.RG_BUY_MEMORY_BUCKET,
+  maxSize: config.RG_BUY_MEMORY_BUCKET_MAX_SIZE,
+  minSize: config.RG_BUY_MEMORY_BUCKET_MIN_SIZE
+}
 
-  buyBucket: { 
-    maxSize: 25,
-    minSize: 5,
-    items: []
-  },
+export const LOCK_BUCKET = {
+  key: config.RG_LOCK_MEMORY_BUCKET,
+  maxSize: 25,
+  minSize: 5
+}
 
-  lockBucket: { 
-    maxSize: 25,
-    minSize: 5,
-    items: []
-  },
+export const TWEET_BUCKET = {
+  key: config.RG_TWEET_MEMORY_BUCKET,
+  maxSize: 25,
+  minSize: 5
+}
 
-  tweetBucket: { 
-    maxSize: 25,
-    minSize: 5,
-    items: []
-  },
+export const LONGTERM_MEMORY = {
+  key: config.RG_LONGTERM_MEMORY_BUCKET,
+  size: 100
+}
 
-  longterm: {
-    size: 100,
-    items: []
+export async function addToBucket(bucket, item, redis) {
+  try {
+    await redis.xAdd(bucket.key, '*', { output: item });
+    const size = await redis.xLen(bucket.key);
+    logger.info("added short term memory " + bucket.key + ", size: " + size);
+    if(size >= bucket.maxSize) {
+      // get the whole bucket
+      const allMemories = await redis.xRange(bucket.key, '-', '+');
+      saveLongTerm(allMemories);
+      logger.info("Redis resetting bucket" + bucket.key);
+      await redis.xTrim(bucket.key, 'MAXLEN', bucket.minSize);
+    }
+  } catch (err) {
+    logger.error(err);
   }
+
 }
 
-function warmupMemory(redis) {
-  // fetch from redis, store in memory
-}
-
-function addToBucket(bucket, item, redis) {
-  bucket.items.push(item);
-  if(bucket.items.length == bucket.size) {
-    // store in long term memory !
-    let summary = createSummary(bucket.items);
-    mem.longterm.items.push(summary);
-    bucket.items.splice(0, bucket.items.length-bucket.minSize);
-  }
-  // save memory to redis
-}
-
-function createSummary(items) {
-  return "Summary!";
-}
-
-function manageEvent(msg, redis) {
-  logger.info("memory event received: " + JSON.stringify(msg));
-  if(msg.event == RG_REAP_EVENT || msg.event == RG_INSTAREAP_EVENT) {
-    addToBucket(mem.lockBucket, msg, redis);
-  } else if(msg.event == RG_BUY_EVENT) {
-    addToBucket(mem.buyBucket, msg, redis);
-  } else if(msg.event == RG_CHAT_EVENT) {
-    addToBucket(mem.chatBucket, msg, redis);
-  }
-}
-
-module.exports = {
-  manageEvent
+function saveLongTerm(memories) {
+  logger.info("Adding item to long term memory")
+  console.log(memories);
 }
