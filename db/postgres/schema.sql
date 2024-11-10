@@ -54,6 +54,13 @@ CREATE TABLE "public"."TelegramUser" (
 
 CREATE INDEX "TelegramUser_userid" ON "public"."TelegramUser" USING btree ("userid");
 
+DROP TABLE IF EXISTS "UserSettings";
+CREATE TABLE "public"."UserSettings" (
+    "userid" bigint NOT NULL,
+    "caninteract" boolean NOT NULL
+) WITH (oids = false);
+
+CREATE INDEX "UserSettings_userid" ON "public"."UserSettings" USING btree ("userid");
 
 CREATE ROLE rg_agent_db_user WITH LOGIN PASSWORD 'REPLACE_ME_WITH_THE_REAL_PASSWORD';
 

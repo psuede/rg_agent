@@ -4,6 +4,16 @@ import { logger } from './../logger.js';
 export const AI_STATUS_FAIL = "KO";
 export const AI_STATUS_SUCCESS = "OK";
 
+let aiactive = true;
+
+export function setAiActive(value) {
+  aiactive = value;
+}
+
+export function isAiActive() {
+  return aiactive;
+}
+
 export async function sendPrompt(type, data) {
   let prompt = {
     user_input : data,
