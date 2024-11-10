@@ -101,7 +101,7 @@ class EventRAGReader:
             try:
                 # Get latest items from the bucket
                                    
-                items = self.redis_client.xrange(bucket, min='+', max='-') if bucket != current_config['LONG_TERM_MEMORY_KEY'] else self.redis_client.xrange(bucket, min='+', max='-', count=current_config['LONG_TERM_MEMORY_COUNT'])
+                items = self.redis_client.xrevrange(bucket, min='-', max='+') if bucket != current_config['LONG_TERM_MEMORY_KEY'] else self.redis_client.xrevrange(bucket, min='-', max='+', count=current_config['LONG_TERM_MEMORY_COUNT'])
                 for item_id, item_data in items:
                     try:
                         contexts.append(EventContext(
@@ -230,7 +230,6 @@ def prepare_model_messages(model_name: str, base_messages: List[Dict[str, str]],
             })
     
     agent_logger.log_message(f"Prepared messages for {model_name} with context and RAG data")
-    console.print(messages)
     return messages
 
 def load_model_contexts(model_name: str) -> str:
@@ -238,11 +237,7 @@ def load_model_contexts(model_name: str) -> str:
     try:
         contexts = []
         context_dir = Path(f"contexts/{model_name.replace(' ', '_')}")
-
-        console.print("context dir!")
-        console.print(context_dir)
-
-        
+   
         if not context_dir.exists():
             logger.error(f"Context directory for {model_name} not found!")
             return ""
@@ -308,7 +303,7 @@ def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger
         
         # Prepare messages with context
         messages_with_context = prepare_model_messages(model_name, messages, agent_logger)
-        agent_logger.log_message(f"Prompt: {messages_with_context}")
+        agent_logger.log_message(f"Prompt: {json.dumps({'messages':messages_with_context}, indent=2)}")
 
         if api == "openpipe":
             response = openpipe_client.chat.completions.create(

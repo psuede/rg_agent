@@ -6,7 +6,7 @@
       "TWEET_BUCKET_KEY": "test-tweet",
       "CHAT_BUCKET_KEY": "test-chat",
       "LONG_TERM_MEMORY_KEY": "test-longterm",
-      "LONG_TERM_MEMORY_COUNT": 3
+      "LONG_TERM_MEMORY_COUNT": 1
   },
   "production": {
       "BUY_BUCKET_KEY": "buy",
@@ -14,6 +14,6 @@
       "TWEET_BUCKET_KEY": "tweet",
       "CHAT_BUCKET_KEY": "chat",
       "LONG_TERM_MEMORY_KEY": "longterm",
-      "LONG_TERM_MEMORY_COUNT": 3
+      "LONG_TERM_MEMORY_COUNT": 1
   }
 }
