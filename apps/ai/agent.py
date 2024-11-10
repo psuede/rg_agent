@@ -476,11 +476,11 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Process final output with tag preservation
         final_output = model_output
         if oracle_output.startswith("APPROVED:"):
-            final_output = oracle_output.split("APPROVED:")[1].strip()
+            final_output = oracle_output.split("APPROVED:")[1].strip().strip('"')
         elif oracle_output.startswith("ADJUSTED:"):
-            final_output = oracle_output.split("ADJUSTED:")[1].strip()
+            final_output = oracle_output.split("ADJUSTED:")[1].strip().strip('"')
         elif oracle_output.startswith("REGEN:"):
-            final_output = oracle_output.split("REGEN:")[1].strip()
+            final_output = oracle_output.split("REGEN:")[1].strip().strip('"')
             
         # Return final output with tag if present, remove the leading and trailing " character  
         return { "status": "OK", "message": final_output }
