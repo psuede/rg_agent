@@ -476,14 +476,14 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Process final output with tag preservation
         final_output = model_output
         if oracle_output.startswith("APPROVED:"):
-            final_output = oracle_output[9:].strip()
+            final_output = oracle_output.split("APPROVED:")[1].strip()
         elif oracle_output.startswith("ADJUSTED:"):
-            final_output = oracle_output[9:].strip()
+            final_output = oracle_output.split("ADJUSTED:")[1].strip()
         elif oracle_output.startswith("REGEN:"):
-            final_output = oracle_output[6:].strip()
+            final_output = oracle_output.split("REGEN:")[1].strip()
             
         # Return final output with tag if present, remove the leading and trailing " character  
-        return { "status": "OK", "message": final_output[1:-1] }
+        return { "status": "OK", "message": final_output }
     
     except Exception as e:
         agent_logger.log_error(f"Error in agent_process: {str(e)}")
