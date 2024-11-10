@@ -38,8 +38,8 @@ export async function manageChat(msg, redis) {
   let prompt = `${msg.content}`;
   let res = await sendPrompt(CHAT_PROMPT, prompt);
   if(res && res.status == AI_STATUS_SUCCESS) {
-    addToBucket(CHAT_BUCKET, prompt, redis);
-    addToBucket(CHAT_BUCKET, res.message, redis);
+    await addToBucket(CHAT_BUCKET, prompt, redis);
+    await addToBucket(CHAT_BUCKET, res.message, redis);
     await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
       { event: RG_SEND_TG, 
         message: res.message,

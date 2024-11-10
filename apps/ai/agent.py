@@ -32,7 +32,8 @@ MODEL_SPECS = {
     "The Architect": {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
     "The Dreamer": {"api": "openpipe", "model": "openpipe:gold-months-train"},
     "The Oracle": {"api": "openai", "model": "gpt-4-0125-preview"},
-    "The One": {"api": "openpipe", "model": "openpipe:gold-months-train"}
+    "The One": {"api": "openpipe", "model": "openpipe:gold-months-train"},
+    "The Old One": {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
 }
 
 # Define your event tags and their corresponding Redis buckets
@@ -229,6 +230,7 @@ def prepare_model_messages(model_name: str, base_messages: List[Dict[str, str]],
             })
     
     agent_logger.log_message(f"Prepared messages for {model_name} with context and RAG data")
+    console.print(messages)
     return messages
 
 def load_model_contexts(model_name: str) -> str:
@@ -236,6 +238,10 @@ def load_model_contexts(model_name: str) -> str:
     try:
         contexts = []
         context_dir = Path(f"contexts/{model_name.replace(' ', '_')}")
+
+        console.print("context dir!")
+        console.print(context_dir)
+
         
         if not context_dir.exists():
             logger.error(f"Context directory for {model_name} not found!")
@@ -245,9 +251,11 @@ def load_model_contexts(model_name: str) -> str:
         for file_path in context_dir.glob("*.yaml"):
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
+                    console.print("Yoooooooooo")
                     context_data = yaml.safe_load(f)
                     if context_data and isinstance(context_data, dict):
                         # Add section title based on filename
+                        console.print("hhehehhehehe")
                         section_title = file_path.stem.upper()
                         section_content = context_data.get('content', '')
                         if section_content:
@@ -475,11 +483,11 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Process final output with tag preservation
         final_output = model_output
         if oracle_output.startswith("APPROVED:"):
-            final_output = oracle_output[10:].strip()
+            final_output = oracle_output[9:].strip()
         elif oracle_output.startswith("ADJUSTED:"):
-            final_output = oracle_output[10:].strip()
+            final_output = oracle_output[9:].strip()
         elif oracle_output.startswith("REGEN:"):
-            final_output = oracle_output[7:].strip()
+            final_output = oracle_output[6:].strip()
             
         # Return final output with tag if present, remove the leading and trailing " character  
         return { "status": "OK", "message": final_output[1:-1] }
@@ -498,7 +506,7 @@ def agent_generate_memory(generation_request: PromptType) -> str:
             {"role": "user", "content": memory_items}
         ]
 
-        summary = call_model_api("The One", old_one_input, agent_logger)
+        summary = call_model_api("The Old One", old_one_input, agent_logger)
         return { "status": "OK", "summary": summary }
         
     except Exception as e:
