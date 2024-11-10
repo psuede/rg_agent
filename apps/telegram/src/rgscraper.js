@@ -113,6 +113,7 @@ async function handleLock(senderid, message, redis) {
           eth: ethValue,
           usd: usdValue,
           supply: supplyValue,
+          chatId: message.chatId,
           messageid: message.conversation[message.conversation.length-1].messageid
         }));
     }
@@ -127,6 +128,7 @@ async function handleBuy(senderid, message, redis) {
       await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
         { event: RG_BUY_BOT_MESSAGE, 
           value: ethValue,
+          chatId: message.chatId,
           messageid: message.conversation[message.conversation.length-1].messageid
         }));
     }
