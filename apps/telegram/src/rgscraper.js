@@ -121,8 +121,8 @@ async function handleLock(senderid, message, redis) {
 }
 
 async function handleBuy(senderid, message, redis) {
-  // is this a message to the reaper?
-  if (message && senderid == config.BUY_BOT_ID) {
+  // is it coming from the buy bot?
+  if (message && (senderid == config.BUY_BOT_ID || senderid == config.BUY_BOT_ID_TEST)) {
     let ethValue = getEthFromBuyText(message.content);
     if(ethValue) {
       await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
