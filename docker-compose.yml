@@ -20,7 +20,7 @@ services:
 
   orchestrator:
     build:
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       context: ./apps/orchestrator
     volumes:
       - ./apps/orchestrator/src:/apps/orchestrator/src
@@ -36,7 +36,7 @@ services:
 
   telegramhandler:
     build:
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       context: ./apps/telegram
     volumes:
       - ./apps/telegram/src:/apps/telegram/src
