@@ -59,6 +59,7 @@ to the main channel. find a differentiation there.. look at from where the messa
     await addTelegramMessage(msg.chatId, config.TG_REAPER_ID, messageSent.message, false, Date.now(), messageSent.id, msg.replyTo);
   } catch (err) {
     logger.error(err);
+    console.log(err);
   }
 }
 
