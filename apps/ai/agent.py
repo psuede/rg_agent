@@ -251,11 +251,9 @@ def load_model_contexts(model_name: str) -> str:
         for file_path in context_dir.glob("*.yaml"):
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
-                    console.print("Yoooooooooo")
                     context_data = yaml.safe_load(f)
                     if context_data and isinstance(context_data, dict):
                         # Add section title based on filename
-                        console.print("hhehehhehehe")
                         section_title = file_path.stem.upper()
                         section_content = context_data.get('content', '')
                         if section_content:
