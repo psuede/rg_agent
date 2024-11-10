@@ -43,6 +43,7 @@ export async function manageChat(msg, redis) {
     await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
       { event: RG_SEND_TG, 
         message: res.message,
+        chatId: msg.chatId,
         replyTo: msg.conversation[msg.conversation.length-1].messageid
       }));
   }

@@ -29,6 +29,7 @@ export async function manageLock(msg, redis) {
       {
         event: RG_SEND_TG,
         message: res.message,
+        chatId: msg.chatId,
         replyTo: msg.messageid
       }));
   }

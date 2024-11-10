@@ -82,7 +82,6 @@ async function handleReaperChat(senderid, message, redis) {
 }
 
 function isLockMessage(msg) {
-  console.log(msg)
   return msg.content && msg.content.indexOf(walletLockedIdentifier) > -1
 }
 
@@ -202,6 +201,7 @@ export async function saveMessage(message, data, chatId, timestamp) {
       userName: userName,
       userId: userId
     },
+    chatId: chatId,
     toReaper: toReaper,
     content: data,
     conversation: msgChain

@@ -14,6 +14,7 @@ export async function manageBuy(msg, redis) {
     await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
       { event: RG_SEND_TG_BUY_REACTION, 
         message: res.message,
+        chatId: msg.chatId,
         replyTo: msg.messageid
       }));
   }

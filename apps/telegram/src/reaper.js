@@ -1,12 +1,8 @@
-// TODO: CLEAN THIS
 import { logger } from './logger.js';
 import { config } from './config/config.js';
 import { Api } from 'telegram';
 import { RG_SEND_TG, RG_SEND_TG_BUY_REACTION } from './config/eventkeys.js';
-import { saveMessage } from './rgscraper.js';
 import { addTelegramMessage } from './db/postgresdbhandler.js'
-
-let channel = config.RG_TG_MAIN_CHAT;
 
 export async function subscribeToChatEvent(tgClient, redis) {
   await redis.subscribe(config.RG_EVENT_KEY, async (message) => {
@@ -43,21 +39,24 @@ async function manageRgEvent(msg, tgClient) {
 
   try {
 
+    /*
+find a solution for test in prod, right now it sends everything 
+to the main channel. find a differentiation there.. look at from where the message came?
+    */
     // typing ...
-    console.log("tg interaction being sent !!")
-    await tgClient.invoke(new Api.messages.SetTyping({ peer: channel, action: new Api.SendMessageTypingAction({}) }));
+    await tgClient.invoke(new Api.messages.SetTyping({ peer: msg.chatId, action: new Api.SendMessageTypingAction({}) }));
     let delay = getTypingDelay(msg.message);
 
     let secondTypingThreshold = 5000;
     if (delay > secondTypingThreshold) {
       await new Promise(resolve => setTimeout(resolve, secondTypingThreshold));
       delay -= secondTypingThreshold;
-      tgClient.invoke(new Api.messages.SetTyping({ peer: channel, action: new Api.SendMessageTypingAction({}) }));
+      tgClient.invoke(new Api.messages.SetTyping({ peer: msg.chatId, action: new Api.SendMessageTypingAction({}) }));
     }
     await new Promise(resolve => setTimeout(resolve, delay));
-    let messageSent = await tgClient.sendMessage(channel, msg);
+    let messageSent = await tgClient.sendMessage(msg.chatId, msg);
     
-    await addTelegramMessage(channel, config.TG_REAPER_ID, messageSent.message, false, Date.now(), messageSent.id, msg.replyTo);
+    await addTelegramMessage(msg.chatId, config.TG_REAPER_ID, messageSent.message, false, Date.now(), messageSent.id, msg.replyTo);
   } catch (err) {
     logger.error(err);
   }
