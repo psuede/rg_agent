@@ -24,11 +24,6 @@ async function addSocialGroupsIfNeeded(groups) {
 }
 
 export async function addTelegramUserIfNeeded(userId, userName, firstName, lastName, isBot) {
-  console.log("trying to add user!")
-  console.log(userId)
-  console.log(userName)
-  console.log(firstName)
-  console.log(lastName)
   await db.raw(`INSERT INTO "TelegramUser" ("userid", "username", "firstname", "lastname", "isbot") VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`, [userId, userName, firstName, lastName, isBot]);
 }
 
