@@ -164,7 +164,9 @@ export async function saveMessage(message, data, chatId, timestamp) {
   let isMedia = (message.media != null);
   let reaperMessageId = message.id;
 
+  console.log("y")
   if (userId) {
+    console.log("x")
     await addTelegramUserIfNeeded(userId, nullIfEmpty(userName), nullIfEmpty(firstName), nullIfEmpty(lastName), falseIfEmpty(isBot));
   }
 
