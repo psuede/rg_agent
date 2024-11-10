@@ -104,6 +104,13 @@ config.BUY_BOT_ID = get({
   default: process.env.RG_TG_BUY_BOT_ID
 })
 
+config.BUY_BOT_ID_TEST = get({
+  dev: null,
+  test: null,
+  prod: null,
+  default: process.env.RG_TG_BUY_BOT_ID_TEST
+})
+
 config.RG_TG_REAPERBOT_ID = {
   dev: null,
   test: process.env.RG_TG_REAPERBOT_ID_TEST,
