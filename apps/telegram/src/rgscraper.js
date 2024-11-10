@@ -177,17 +177,25 @@ export async function saveMessage(message, data, chatId, timestamp) {
         continue;
       }
       // is this a message to the reaper?
+      console.log("a")
+      console.log(Number(entity.userId))
+      console.log(config.TG_REAPER_ID)
       toReaper |= (Number(entity.userId) == config.TG_REAPER_ID);
       await addTelegramMessageEntity(reaperMessageId, Number(entity.userId));
     }
 
   }
 
+  console.log(config.TG_REAPER_ID)
+  console.log("reapermessageid: " + reaperMessageId);
   let msgChain = await getTelegramMessageChain(reaperMessageId);
+  console.log(msgChain);
+  
   if (msgChain && msgChain.length > 0) {
     for (const msg of msgChain) {
       let entity = await getTelegramMessageEntity(msg.messageid, config.TG_REAPER_ID);
       if (entity != null) {
+        console.log("b")
         toReaper = true;
       }
     }
