@@ -57,6 +57,24 @@ services:
     depends_on:
       - postgres
 
+  xagent:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./apps/x
+    volumes:
+      - ./apps/x/:/apps/x/
+    environment:
+      - RG_AGENT_POSTGRES_URL=postgres
+      - RG_AGENT_POSTGRES_CREDENTIALS
+      - RG_AGENT_REDIS_URL=redis
+      - RG_REAPER_X_API_KEY
+      - RG_REAPER_X_API_KEY_SECRET
+      - RG_REAPER_X_ACCESS_TOKEN
+      - RG_REAPER_X_ACCESS_TOKEN_SECRET
+    depends_on:
+      - postgres
+      - redis
+
   postgres:
     image: timescale/timescaledb-ha:pg16
     restart: always
