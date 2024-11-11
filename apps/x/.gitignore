@@ -2,5 +2,5 @@
 /node_modules
 /log
 .env
-cookies.json
-accounts.json
+/envfiles/cookies.json
+/envfiles/accounts.json

@@ -63,6 +63,7 @@ services:
       context: ./apps/x
     volumes:
       - ./apps/x/src:/apps/x/src
+      - ./apps/x/envfiles:/apps/x/envfiles
     environment:
       - RG_AGENT_POSTGRES_URL=postgres
       - RG_AGENT_POSTGRES_CREDENTIALS

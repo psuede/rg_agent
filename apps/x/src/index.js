@@ -5,8 +5,8 @@ import { promises as fs } from 'fs';
 import { Cookie } from 'tough-cookie';
 import { addTweetIfNotExists } from './db/postgresdbhandler.js'
 
-const COOKIE_FILE = "cookies.json";
-const ACCOUNTS_FILE = "accounts.json";
+const COOKIE_FILE = "./envfiles/cookies.json";
+const ACCOUNTS_FILE = "./envfiles/accounts.json";
 const scraper = new Scraper();
 let accounts;
 
