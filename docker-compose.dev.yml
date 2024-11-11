@@ -62,7 +62,7 @@ services:
       dockerfile: Dockerfile.dev
       context: ./apps/x
     volumes:
-      - ./apps/x/:/apps/x/
+      - ./apps/x/src:/apps/x/src
     environment:
       - RG_AGENT_POSTGRES_URL=postgres
       - RG_AGENT_POSTGRES_CREDENTIALS
