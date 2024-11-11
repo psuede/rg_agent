@@ -29,6 +29,7 @@ services:
       - RG_AGENT_POSTGRES_URL=postgres
       - RG_AGENT_POSTGRES_CREDENTIALS
       - RG_AGENT_REDIS_URL=redis
+      - RG_TG_MAIN_CHAT_TEST
     depends_on:
       - postgres
       - redis
@@ -63,7 +64,6 @@ services:
       context: ./apps/x
     volumes:
       - ./apps/x/src:/apps/x/src
-      - ./apps/x/envfiles:/apps/x/envfiles
     environment:
       - RG_AGENT_POSTGRES_URL=postgres
       - RG_AGENT_POSTGRES_CREDENTIALS
@@ -74,7 +74,8 @@ services:
       - RG_REAPER_X_ACCESS_TOKEN_SECRET
     depends_on:
       - postgres
-      - redis
+      - telegramhandler
+      - orchestrator
 
   postgres:
     image: timescale/timescaledb-ha:pg16

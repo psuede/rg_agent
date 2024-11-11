@@ -62,7 +62,32 @@ CREATE TABLE "public"."UserSettings" (
 
 CREATE INDEX "UserSettings_userid" ON "public"."UserSettings" USING btree ("userid");
 
-CREATE ROLE rg_agent_db_user WITH LOGIN PASSWORD 'REPLACE_ME_WITH_THE_REAL_PASSWORD';
+DROP TABLE IF EXISTS "Tweet";
+CREATE TABLE "public"."Tweet" (
+    "tweetid" character varying NOT NULL,
+    "conversationid" character varying,
+    "likes" integer,
+    "bookmarkcount" integer,
+    "name" character varying,
+    "replies" integer,
+    "retweets" integer,
+    "text" character varying NOT NULL,
+    "userid" bigint,
+    "username" character varying,
+    "isquoted" boolean,
+    "isreply" boolean,
+    "isretweet" boolean,
+    "ispin" boolean,
+    "sensitivecontent" boolean,
+    "timestamp" integer,
+    "html" character varying,
+    CONSTRAINT "Tweet_tweetid" PRIMARY KEY ("tweetid")
+) WITH (oids = false);
+
+CREATE INDEX "Tweet_userid" ON "public"."Tweet" USING btree ("userid");
+CREATE INDEX "Tweet_username" ON "public"."Tweet" USING btree ("username");
+
+CREATE ROLE rg_agent_db_user WITH LOGIN PASSWORD 'REPLACE_ME';
 
 -- Grant privileges
 GRANT CONNECT ON DATABASE rg_agent_db TO rg_agent_db_user;

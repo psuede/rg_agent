@@ -139,7 +139,6 @@ config.RG_AGENT_REDIS_URL = get({
   default: process.env.RG_AGENT_REDIS_URL
 });
 
-
 config.TG_REAPER_API_STRING_SESSION = get({
   dev: null,
   test: null,
@@ -173,4 +172,11 @@ config.TG_REAPER_ID = get({
   test: null,
   prod: null,
   default: process.env.TG_REAPER_ID
+})
+
+config.RG_TG_ADMIN_CHAT = get({
+  dev: null,
+  test: null,
+  prod: null,
+  default: process.env.RG_TG_MAIN_CHAT_TEST
 })

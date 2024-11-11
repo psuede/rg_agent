@@ -5,7 +5,7 @@ class PromptType(str, Enum):
     BUY = 'buy'
     CHAT = 'chat' 
     LOCK = 'lock'
-    TWEET = 'Tweet'
+    TWEET = 'tweet'
 
 class Prompt(BaseModel):
     user_input: str

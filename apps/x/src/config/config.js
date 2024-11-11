@@ -18,16 +18,6 @@ config.NAME = {
 }
 */
 
-/*
-      appKey: get(config.TWITTER_API_KEY),
-      appSecret: get(config.TWITTER_API_KEY_SECRET),
-      // Following access tokens are not required if you are
-      // at part 1 of user-auth process (ask for a request token)
-      // or if you want a app-only client (see below)
-      accessToken: get(config.TWITTER_ACCESS_TOKEN),
-      accessSecret: get(config.TWITTER_ACCESS_TOKEN_SECRET),
-*/
-
 export const config = {};
 
 config.RG_REAPER_X_API_KEY = get({
@@ -77,6 +67,20 @@ config.RG_AGENT_POSTGRES_CREDENTIALS = get({
   test: null,
   prod: null,
   default: process.env.RG_AGENT_POSTGRES_CREDENTIALS,
+});
+
+config.RG_AGENT_REDIS_URL = get({
+  dev: null,
+  test: null,
+  prod: null,
+  default: process.env.RG_AGENT_REDIS_URL
+});
+
+config.RG_EVENT_KEY = get({
+  dev: null,
+  test: "test_rg_event",
+  prod: null,
+  default: "rg_event"
 });
 
 

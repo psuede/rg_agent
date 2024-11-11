@@ -1,7 +1,7 @@
 import { logger } from './logger.js';
 import { config } from './config/config.js';
 import { Api } from 'telegram';
-import { RG_SEND_TG, RG_SEND_TG_BUY_REACTION } from './config/eventkeys.js';
+import { RG_SEND_TG, RG_SEND_TG_BUY_REACTION, RG_SEND_TG_TWEET_SUGGESTION } from './config/eventkeys.js';
 import { addTelegramMessage } from './db/postgresdbhandler.js'
 
 export async function subscribeToChatEvent(tgClient, redis) {
@@ -12,9 +12,10 @@ export async function subscribeToChatEvent(tgClient, redis) {
 
 
 async function manageRgEvent(msg, tgClient) {
-  if(msg.event != RG_SEND_TG && msg.event != RG_SEND_TG_BUY_REACTION) {
+  if(msg.event != RG_SEND_TG && msg.event != RG_SEND_TG_BUY_REACTION && msg.event != RG_SEND_TG_TWEET_SUGGESTION) {
     return;
   }
+
   /*
   if (msg.event == RG_REAPER_REACT_TO_REAP || msg.event == RG_REAPER_REACT_TO_BUY || 
     msg.event == RG_SEND_NEXT_REACT || event.event == RG_SEND_REFLECTION || msg.event == RG_SEND_REPLY) {
@@ -54,9 +55,12 @@ to the main channel. find a differentiation there.. look at from where the messa
       tgClient.invoke(new Api.messages.SetTyping({ peer: msg.chatId, action: new Api.SendMessageTypingAction({}) }));
     }
     await new Promise(resolve => setTimeout(resolve, delay));
-    let messageSent = await tgClient.sendMessage(msg.chatId, msg);
+    let messageSent = await tgClient.sendMessage(msg.chatId, msg );
    
-    await addTelegramMessage(msg.chatId, config.TG_REAPER_ID, messageSent.message, false, Date.now(), messageSent.id, msg.replyTo);
+    if(msg.event != RG_SEND_TG_TWEET_SUGGESTION) {
+      await addTelegramMessage(msg.chatId, config.TG_REAPER_ID, messageSent.message, false, Date.now(), messageSent.id, msg.replyTo);
+    }
+
   } catch (err) {
     logger.error(err);
     console.log(err);
