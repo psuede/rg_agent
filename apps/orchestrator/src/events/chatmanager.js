@@ -30,7 +30,8 @@ Expected format for the judge
 */
 
 export async function manageChat(msg, redis) {
-  if(!await canInteract(msg.from.userId)) {
+  // for now let all channel messages pass this point
+  if(!msg.isChannelMessage && !await canInteract(msg.from.userId)) {
     logger.info("User not allowed to interact with the reaper");
     return;
   }

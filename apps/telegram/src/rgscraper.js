@@ -14,6 +14,10 @@ const RG_CHAT_ROOMS = [
   {
     name: "RG_TestChat",
     chatId: config.RG_TG_TEST_CHAT
+  },
+  {
+    name: "RG_FeedChat",
+    chatId: config.RG_TG_FEED_CHAT
   }
 ]
 
@@ -24,12 +28,14 @@ const rgRegex = /(\d+(?:,\d+)*)\s*RG/
 const ethRegex = /(\d+(?:.\d+)*)\s*ETH/;
 const usdRegex = /\$(\d+(?:,\d+)*)/;
 const supplyRegex = /supply_out_of_circulation:\s*([\d.]+)%/;
+const CHANNEL_MESSAGE_IDENTIFIER = "UpdateNewChannelMessage";
 
 export async function scrape(tgClient, redis) {
 
   // listen to new messages
   tgClient.addEventHandler(async (event) => {
 
+    console.log(event)
     let chatId = Number(event.chatId);
     if (!isPartOfGroup(chatId, RG_CHAT_ROOMS)) {
       return;
@@ -48,7 +54,8 @@ export async function scrape(tgClient, redis) {
 
       let sender = await message.getSender();
       let userId = Number(sender.id);
-      await handleReaperChat(userId, savedMessage, redis);
+      let isChannelMessage = event.originalUpdate.className == CHANNEL_MESSAGE_IDENTIFIER;
+      await handleReaperChat(userId, savedMessage, isChannelMessage, redis);
       await handleBuy(userId, savedMessage, redis);
       await handleLock(userId, savedMessage, redis);
 
@@ -73,10 +80,12 @@ export async function scrape(tgClient, redis) {
 
 }
 
-async function handleReaperChat(senderid, message, redis) {
+async function handleReaperChat(senderid, message, isChannelMessage, redis) {
   // is this a message to the reaper?
   if (message && message.toReaper && senderid != config.TG_REAPER_ID) {
-    await redis.publish(config.RG_EVENT_KEY, JSON.stringify({event: RG_MESSAGE_TO_REAPER, ...message}));
+    await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
+      {event: RG_MESSAGE_TO_REAPER, isChannelMessage: isChannelMessage, ...message}
+    ));
   }
 }
 
@@ -85,7 +94,7 @@ function isLockMessage(msg) {
 }
 
 async function handleLock(senderid, message, redis) {
-  // is this a message to the reaper?
+  // is this a lock message?
   if (message /*&& senderid == config.RG_TG_REAPERBOT_ID*/ && isLockMessage(message)) {
     // extract wallet address, rg amount, eth amount, usd amount, percentage locked... if instareapok
     let text = message.content;
@@ -171,6 +180,7 @@ export async function saveMessage(message, data, chatId, timestamp) {
 
   await addTelegramMessage(chatId, userId, data, isMedia, timestamp, reaperMessageId, reaperReplyTo);
 
+
   let toReaper = false;
   if (message.entities && message.entities.length > 0) {
     for (const entity of message.entities) {
@@ -181,11 +191,24 @@ export async function saveMessage(message, data, chatId, timestamp) {
       toReaper |= (Number(entity.userId) == config.TG_REAPER_ID);
       await addTelegramMessageEntity(reaperMessageId, Number(entity.userId));
     }
-
   }
 
+  toReaper = message.message.indexOf(config.RG_REAPER_CHAT_TAG) > -1;
+
   let msgChain = await getTelegramMessageChain(reaperMessageId);
-    
+  if(!toReaper && msgChain) {
+    for(const msg of msgChain) {
+      toReaper |= (msg.content.indexOf(config.RG_REAPER_CHAT_TAG) > - 1);
+    }
+  }
+
+  /*
+
+ update the DB structure on the VM with the new tweet table
+ try and deploy the X container in prod, have it running
+  */
+
+ /*   
   if (msgChain && msgChain.length > 0) {
     for (const msg of msgChain) {
       let entity = await getTelegramMessageEntity(msg.messageid, config.TG_REAPER_ID);
@@ -194,7 +217,7 @@ export async function saveMessage(message, data, chatId, timestamp) {
       }
     }
   }
-
+*/
   logger.info("New message added: " + data);
   return {
     from : {

@@ -20,6 +20,13 @@ config.NAME = {
 
 export const config = {};
 
+config.RG_REAPER_CHAT_TAG = get({
+  dev: null,
+  test: null,
+  prod: null,
+  default: "@rgreaper"
+});
+
 config.RG_EVENT_KEY = get({
   dev: null,
   test: "test_rg_event",
@@ -81,6 +88,13 @@ config.RG_TG_MAIN_CHAT = get({
   test: process.env.RG_TG_MAIN_CHAT_TEST,
   prod: null,
   default: process.env.RG_TG_MAIN_CHAT
+})
+
+config.RG_TG_FEED_CHAT = get({
+  dev: null,
+  test: process.env.RG_TG_FEED_CHAT,
+  prod: null,
+  default: process.env.RG_TG_FEED_CHAT
 })
 
 config.RG_TG_TEST_CHAT = get({

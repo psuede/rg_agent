@@ -2,6 +2,7 @@ from openai import OpenAI
 from anthropic import Anthropic
 from openpipe import OpenAI as OpenPipeAI
 import os
+import re
 import json
 import threading
 import requests
@@ -416,7 +417,10 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             architect_output = architect_output.strip()
             if architect_output.startswith("```"):
                 architect_output = "\n".join(architect_output.split("\n")[1:-1])
-            
+
+            # extract the json part of the reply
+            json_match = re.search(r'({.*})', architect_output, re.DOTALL)
+            architect_output = json_match.group(1)            
             parsed_output = json.loads(architect_output)
             tasks = parsed_output.get('tasks', [])
             
@@ -431,6 +435,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
         except json.JSONDecodeError:
             agent_logger.log_error("Failed to parse Architect output as JSON")
+            agent_logger.log_error("Architect output: " + architect_output)
             return { "status": "KO", "message": "Invalid task structure from Architect" }
         except Exception as e:
             agent_logger.log_error(f"Error processing Architect output: {str(e)}")
