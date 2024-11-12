@@ -8,7 +8,7 @@ The application is dockerized and consists of the following services:
 | ------------ | ------------ |
 |  ai | Contains the AI orchestration engine, making sequential calls to specialized models depending on the use case.  |
 |  telegramhandler | Scrapes Telegram messages from groups and channels where the agent lives  |
-|  orchestrator | Recieves events from the data ingestion and forwards to the appropriate target  |
+|  orchestrator | Receieves events from the data ingestion and forwards to the appropriate target  |
 |  xagent | Scrapes messages from X  |
 |  postgres | Data storage of Telegram and X content   |
 |  redis | Used as pub/sub message bus for the intra service communication, and keeps short and long term memory  |
