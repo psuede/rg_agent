@@ -16,34 +16,7 @@ async function manageRgEvent(msg, tgClient) {
     return;
   }
 
-  /*
-  if (msg.event == RG_REAPER_REACT_TO_REAP || msg.event == RG_REAPER_REACT_TO_BUY || 
-    msg.event == RG_SEND_NEXT_REACT || event.event == RG_SEND_REFLECTION || msg.event == RG_SEND_REPLY) {
-    msgObj = { message: event.msg }  
-  } else if (msg.event == RG_DO_NEXT) {
-    msgObj = { message: "/next" };
-  } else if (msg.event == RG_HAPPY_REACTION || msg.event == RG_SAD_REACTION) {
-    logger.info("Send reaction!");
-
-    await tgClient.invoke(
-      new Api.messages.SendReaction({
-        peer: channel,
-        msgId: event.replyTo,
-        big: true,
-        reaction: [new Api.ReactionEmoji({ emoticon: randomReaction(event.type) })],
-      })
-    );   
-     return;
-  }
-     */
-
-
   try {
-
-    /*
-find a solution for test in prod, right now it sends everything 
-to the main channel. find a differentiation there.. look at from where the message came?
-    */
     // typing ...
     await tgClient.invoke(new Api.messages.SetTyping({ peer: msg.chatId, action: new Api.SendMessageTypingAction({}) }));
     let delay = getTypingDelay(msg.message);
@@ -63,7 +36,6 @@ to the main channel. find a differentiation there.. look at from where the messa
 
   } catch (err) {
     logger.error(err);
-    console.log(err);
   }
 }
 
@@ -82,15 +54,3 @@ function getTypingDelay(msg) {
 function randomNumber(max) {
   return Math.floor(Math.random() * (max + 1));
 }
-
-
-
-    /*
-    const result = await tgClient.invoke(
-      new Api.messages.GetAvailableReactions({
-        hash: 0,
-      })
-    );
-    console.log("reactions")
-    console.log(result); // prints the result
-    */

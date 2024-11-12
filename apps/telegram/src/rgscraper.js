@@ -202,22 +202,6 @@ export async function saveMessage(message, data, chatId, timestamp) {
     }
   }
 
-  /*
-
- update the DB structure on the VM with the new tweet table
- try and deploy the X container in prod, have it running
-  */
-
- /*   
-  if (msgChain && msgChain.length > 0) {
-    for (const msg of msgChain) {
-      let entity = await getTelegramMessageEntity(msg.messageid, config.TG_REAPER_ID);
-      if (entity != null) {
-        toReaper = true;
-      }
-    }
-  }
-*/
   logger.info("New message added: " + data);
   return {
     from : {
