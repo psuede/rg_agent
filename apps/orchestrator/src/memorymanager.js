@@ -1,11 +1,9 @@
 
-// Concept: Store the very latest up to date memory in redis
 import { config } from './config/config.js';
 import { logger } from './logger.js';
 import { sendGenerationRequest } from './util/util.js'
 import { CHAT_PROMPT, BUY_PROMPT, LOCK_PROMPT, TWEET_PROMPT } from './events/baseprompts.js';
 
-// short-term
 export const CHAT_BUCKET = {
   type: CHAT_PROMPT,
   key: config.RG_CHAT_MEMORY_BUCKET,
@@ -57,9 +55,4 @@ export async function addToBucket(bucket, item, redis) {
     logger.error(err);
   }
 
-}
-
-function saveLongTerm(memories) {
-  logger.info("Adding item to long term memory")
-  console.log(memories);
 }

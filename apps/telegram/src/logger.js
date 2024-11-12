@@ -21,7 +21,6 @@ export const logger = createLogger({
 
 if (process.env.NODE_ENV !== 'PRODUCTION') {
     logger.add(new transports.Console({ format: winston.format.cli(), level: 'info'}));
-    //logger.add(new transports.Console({ format: winston.format.cli() }, error));
     // Turn these on to create logs as if it were production
      logger.add(new transports.File({ filename: 'log/error.log', level: 'error', maxsize:5000000, maxFiles: 5 }));
      logger.add(new transports.File({ filename: 'log/warn.log', level: 'warn', maxsize:5000000, maxFiles: 5 }));

@@ -6,29 +6,6 @@ import { CHAT_BUCKET, addToBucket } from '../memorymanager.js';
 import { CHAT_PROMPT } from './baseprompts.js';
 import { canInteract } from './../db/postgresdbhandler.js'
 
-/*
-
-Expected format for the judge
-
-{
-  from: psuede
-  content: "Why is it the best?"
-  conversation: [
-    {
-      from: Reaper
-      to: psuede
-      content: "RG is the best token ever"
-    },
-    {
-      from: psuede
-      to: Reaper
-      content: "What is RG?"
-    },
-  ]
-}
-
-*/
-
 export async function manageChat(msg, redis) {
   // for now let all channel messages pass this point
   if(!msg.isChannelMessage && !await canInteract(msg.from.userId)) {

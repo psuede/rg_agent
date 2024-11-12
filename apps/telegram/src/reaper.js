@@ -10,7 +10,6 @@ export async function subscribeToChatEvent(tgClient, redis) {
   });
 }
 
-
 async function manageRgEvent(msg, tgClient) {
   if(msg.event != RG_SEND_TG && msg.event != RG_SEND_TG_BUY_REACTION && msg.event != RG_SEND_TG_TWEET_SUGGESTION) {
     return;
@@ -40,10 +39,8 @@ async function manageRgEvent(msg, tgClient) {
 }
 
 function getTypingDelay(msg) {
-
   let MIN_SHORT_TYPING_DELAY = 4 * 1000;
   let MAX_SHORT_TYPING_DELAY = randomNumber(6) * 1000;
-
   let MIN_LONG_TYPING_DELAY = 10 * 1000;
   let MAX_LONG_TYPING_DELAY = randomNumber(20) * 1000;
 
