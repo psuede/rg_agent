@@ -11,13 +11,11 @@ import { subscribeToChatEvent } from "./reaper.js";
     let redisPublisher = redisConnection.duplicate();
     redisPublisher.on('error', err => console.error(err));
     redisPublisher.connect();
-  
+
     scrape(tgClient, redisPublisher);
     subscribeToChatEvent(tgClient, redisConnection);
 
-  } catch(err) {
+  } catch (err) {
     console.log(err)
   }
-
-  
 })();

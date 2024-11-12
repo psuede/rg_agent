@@ -35,7 +35,6 @@ export async function scrape(tgClient, redis) {
   // listen to new messages
   tgClient.addEventHandler(async (event) => {
 
-    console.log(event)
     let chatId = Number(event.chatId);
     if (!isPartOfGroup(chatId, RG_CHAT_ROOMS)) {
       return;
