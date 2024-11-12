@@ -55,6 +55,7 @@ services:
       - RG_TG_BUY_BOT_ID_TEST
       - RG_TG_REAPERBOT_ID_TEST
       - RG_TG_REAPERBOT_ID
+      - RG_TG_FEED_CHAT
     depends_on:
       - postgres
 
