@@ -27,15 +27,10 @@ async function fetchTweets() {
     if(tweets) {
       for(const tweet of tweets) {
         let res = await addTweetIfNotExists(tweet);
-        if(res /*&& res.rowCount > 0*/) {
+        if(res && res.rowCount > 0) {
           logger.info("New tweet added: " + tweet.text);
           await redisConnection.publish(config.RG_EVENT_KEY, 
             JSON.stringify({event: RG_NEW_TWEET, ...tweet, url: (GENERIC_TWEET_URL + tweet.id)}));
-
-
-            //await redisConnection.publish(config.RG_EVENT_KEY, 
-            //  JSON.stringify({event: RG_NEW_TWEET, id: "1855571374192120128", text: "Why cant sell sir", url: (GENERIC_TWEET_URL + "1855571374192120128")}));
-
           // wait a bit to not overwhelm downstream systems
           await new Promise(resolve => setTimeout(resolve, WAIT_BETWEEN_EVENTS));
         }
@@ -49,19 +44,6 @@ async function fetchTweets() {
 async function fakeTweet() {
   await redisConnection.publish(config.RG_EVENT_KEY, 
     JSON.stringify({event: RG_NEW_TWEET, id: "1855571374192120128", text: "Why cant sell sir", url: (GENERIC_TWEET_URL + "1855571374192120128")}));
-}
-
-async function randomDelay(minDelay, maxDelay) {
-  // Use gaussian distribution for more natural delays
-  const gaussianRand = () => {
-    let rand = 0;
-    for (let i = 0; i < 6; i++) rand += Math.random();
-    return rand / 6;
-  };
-
-  const delay = Math.floor(minDelay + gaussianRand() * (maxDelay - minDelay));
-  logger.info("Pausing " + delay + " ms");
-  await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
 (async()=> {
