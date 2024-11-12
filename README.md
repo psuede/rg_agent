@@ -14,11 +14,10 @@ The application is dockerized and consists of the following services:
 |  redis | Used as pub/sub message bus for the intra service communication, and keeps short and long term memory  |
 |  adminer |  Database administration UI |
 
-##Installation
+## Installation
 - Set all the environment variables which are listed inside docker-compose.yml for each service on your system.
 - Test settings: docker compose -f docker-compose.yml -up
 - Production settings: docker compose -f docker-compose.dev.yml -up
-
 
 ## Testing
 Local testing of the AI service is performed with the Robot framework (https://robotframework.org/) 
