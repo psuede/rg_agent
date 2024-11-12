@@ -51,6 +51,6 @@ async function fakeTweet() {
   setInterval(() => { 
     logger.info("Fetching new tweets");
     fetchTweets();
-  }, 1000 * 60 * TWEET_FETCH_HOUR_INTERVAL);
+  }, 1000 * 60 * 60 * TWEET_FETCH_HOUR_INTERVAL);
 
 })()
