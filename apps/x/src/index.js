@@ -70,8 +70,5 @@ async function randomDelay(minDelay, maxDelay) {
     logger.info("Fetching new tweets");
     fetchTweets();
   }, 1000 * 60 * TWEET_FETCH_HOUR_INTERVAL);
-  
- // await fakeTweet();
- // fetchTweets()
 
 })()
