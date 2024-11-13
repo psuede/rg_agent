@@ -14,7 +14,7 @@ export async function manageChat(msg, redis) {
   }
 
   // remove the @reaper tag
-  let prompt = `${msg.content.replace(RG_REAPER_CHAT_TAG, "").trim()}`;
+  let prompt = `${msg.content.replace(config.RG_REAPER_CHAT_TAG, "").trim()}`;
   let res = await sendPrompt(CHAT_PROMPT, prompt);
   if(res && res.status == AI_STATUS_SUCCESS) {
     await addToBucket(CHAT_BUCKET, prompt, redis);
