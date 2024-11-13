@@ -180,3 +180,10 @@ config.RG_TG_ADMIN_CHAT = get({
   prod: null,
   default: process.env.RG_TG_MAIN_CHAT_TEST
 })
+
+config.RG_REAPER_CHAT_TAG = get({
+  dev: null,
+  test: null,
+  prod: null,
+  default: "@rgreaper"
+});
