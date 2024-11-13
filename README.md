@@ -14,7 +14,7 @@ The application is dockerized and consists of the following services:
 |  redis | Used as pub/sub message bus for the intra service communication, and keeps short and long term memory  |
 |  adminer |  Database administration UI |
 
-##Installation
+## Installation
 
 - Set all the environment variables which are listed inside docker-compose.yml for each service on your system.
 - One time activity to initialize the postgres database:
