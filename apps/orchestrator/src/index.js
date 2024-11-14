@@ -9,8 +9,8 @@ let redisPublisher = redis.duplicate();
 redisPublisher.on('error', err => logger.error(err));
 redisPublisher.connect();
 
+logger.info("Redis subscribing to " + config.RG_EVENT_KEY);
 await redis.subscribe(config.RG_EVENT_KEY, async (message) => {
-  logger.info("Redis subscribing to " + config.RG_EVENT_KEY);
   logger.info(message);
 
   if (message != null) {
