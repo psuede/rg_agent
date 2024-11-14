@@ -8,3 +8,5 @@ export const RG_LOCK_MESSAGE = "lockMessage";
 export const RG_NEW_TWEET = "newTweet";
 export const RG_AI_START = "startai";
 export const RG_AI_STOP = "stopai";
+export const RG_X_START = "startx";
+export const RG_X_STOP = "stopx";

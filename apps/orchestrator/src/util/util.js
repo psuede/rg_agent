@@ -5,6 +5,7 @@ export const AI_STATUS_FAIL = "KO";
 export const AI_STATUS_SUCCESS = "OK";
 
 let aiactive = true;
+let xactive = true;
 
 export function setAiActive(value) {
   aiactive = value;
@@ -12,6 +13,14 @@ export function setAiActive(value) {
 
 export function isAiActive() {
   return aiactive;
+}
+
+export function setXactive(value) {
+  xactive = value;
+}
+
+export function isXactive() {
+  return xactive;
 }
 
 export async function sendPrompt(type, data) {
