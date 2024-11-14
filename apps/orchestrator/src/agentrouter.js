@@ -1,4 +1,4 @@
-
+import { logger } from './logger.js';
 import { RG_MESSAGE_TO_REAPER, RG_BUY_BOT_MESSAGE, RG_LOCK_MESSAGE, RG_NEW_TWEET, RG_AI_START, RG_AI_STOP } from "./config/eventkeys.js";
 import { manageChat } from "./events/chatmanager.js";
 import { manageBuy } from "./events/buymanager.js";

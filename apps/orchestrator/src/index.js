@@ -11,7 +11,6 @@ redisPublisher.connect();
 
 logger.info("Redis subscribing to " + config.RG_EVENT_KEY);
 await redis.subscribe(config.RG_EVENT_KEY, async (message) => {
-  logger.info(message);
 
   if (message != null) {
     try {
