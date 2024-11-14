@@ -9,6 +9,7 @@ import { setAiActive, isAiActive } from "./util/util.js";
 export async function agentRouter(message, redis) {
 
   if(message.event == RG_AI_START || message.event == RG_AI_STOP) {
+    logger.info((message.event == RG_AI_START ? "Enabling" : "Stopping") + " AI agent");
     setAiActive(message.event == RG_AI_START);
     return;
   }
