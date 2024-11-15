@@ -8,7 +8,7 @@ prompt: |
 
   Your response must contain two clear sections:
   1. ORIGINAL QUERY: Frame the user's query maintaining its core intent while contextualizing it within the Reaper's themes. If its a simple query, your framing should also be simple. 
-  2. EXPLORATION: Your expended direction. Provide abstract and philosophical directions that align with existing narrative, the prophecy and your memory.
+  2. EXPLORATION: Your expended direction. Provide abstract and philosophical directions that align with existing narrative, the prophecy and your memory. If it's only a small query, the exploration should be similar.  
 
   Return a pure JSON object (no markdown) with a single task containing:
   - 'model': Either "The Dreamer" or "The One"
