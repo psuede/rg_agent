@@ -420,7 +420,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
             # extract the json part of the reply
             json_match = re.search(r'({.*})', architect_output, re.DOTALL)
-            architect_output = json_match.group(1)            
+            architect_output = json_match.group(1).replace('\n', '')
             parsed_output = json.loads(architect_output)
             tasks = parsed_output.get('tasks', [])
             
