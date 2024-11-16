@@ -31,7 +31,7 @@ config.RG_BUY_MEMORY_BUCKET_MAX_SIZE = get({
   dev: null,
   test: 4,
   prod: null,
-  default: 25
+  default: 10
 });
 
 config.RG_BUY_MEMORY_BUCKET_MIN_SIZE = get({
@@ -45,7 +45,7 @@ config.RG_CHAT_MEMORY_BUCKET_MAX_SIZE = get({
   dev: null,
   test: 5,
   prod: null,
-  default: 75
+  default: 25
 });
 
 config.RG_CHAT_MEMORY_BUCKET_MIN_SIZE = get({
@@ -59,7 +59,7 @@ config.RG_LOCK_MEMORY_BUCKET_MAX_SIZE = get({
   dev: null,
   test: 5,
   prod: null,
-  default: 25
+  default: 10
 });
 
 config.RG_LOCK_MEMORY_BUCKET_MIN_SIZE = get({

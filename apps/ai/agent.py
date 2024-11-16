@@ -37,6 +37,15 @@ MODEL_SPECS = {
     "The Old One": {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
 }
 
+BUY_LOCK_MODEL_SPECS = {
+    "The Judge": {"api": "openai", "model": "gpt-3.5-turbo-0125"},
+    "The Architect": {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
+    "The Dreamer": {"api": "openpipe", "model": "openpipe:rg1-big"},
+    "The Oracle": {"api": "openai", "model": "gpt-4-0125-preview"},
+    "The One": {"api": "openpipe", "model": "openpipe:gold-months-train"},
+    "The Old One": {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
+}
+
 # Define your event tags and their corresponding Redis buckets
 EVENT_TAGS = {
     PromptType.BUY: current_config['BUY_BUCKET_KEY'],
@@ -289,7 +298,7 @@ def get_system_prompt(model_name: str) -> str:
         get_system_prompt.prompts = load_system_prompts()
     return get_system_prompt.prompts.get(model_name, "")
 
-def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger: AgentLogger) -> Optional[str]:
+def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger: AgentLogger, model_spec=MODEL_SPECS) -> Optional[str]:
     """Call the appropriate API for a given model and return the response."""
     model_spec = MODEL_SPECS.get(model_name)
     if not model_spec:
@@ -298,8 +307,7 @@ def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger
 
     try:
         api = model_spec["api"]
-        model_id = model_spec["model"]
-        
+        model_id = model_spec["model"]       
         agent_logger.log_model_call(model_name, model_id)
         
         # Prepare messages with context
@@ -355,6 +363,17 @@ def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger
         agent_logger.log_error(f"Error calling {model_name}: {str(e)}")
         return None
 
+
+
+def short_agent_process(input_data: Dict[str, Any], rag_context: str, agent_logger: AgentLogger) -> Optional[str]:
+  model_input = [
+   {"role": "system", "content": get_system_prompt("The Dreamer")},
+   {"role": "user", "content": input_data}]
+  
+  model_output = call_model_api("The Dreamer", model_input, agent_logger, BUY_LOCK_MODEL_SPECS)
+  return { "status": "OK", "message": model_output.strip().strip('"') }
+
+
 def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
     """Process input through the agent workflow with RAG integration and tag handling."""
     agent_logger = AgentLogger()
@@ -365,7 +384,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         prompt_type = input_data["metadata"]['prompt_type']
         # Use the standalone extract_tag function instead of depending on event_rag
         agent_logger.log_user_input(input_text)
-
+        
         # Get RAG context if available
         rag_context = None
         if event_rag is not None:
@@ -374,6 +393,10 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             except Exception as e:
                 agent_logger.log_error(f"Error getting RAG context: {str(e)}")
                 # Continue without RAG context
+
+
+        if(prompt_type == PromptType.BUY or prompt_type == PromptType.LOCK):
+          return short_agent_process(input_text, rag_context, agent_logger)
 
         # Step 1: The Judge
         judge_input = [

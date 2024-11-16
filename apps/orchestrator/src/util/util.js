@@ -1,5 +1,6 @@
 import { config } from './../config/config.js';
 import { logger } from './../logger.js';
+import { AMOUNT_TAG } from './../events/baseprompts.js';
 
 export const AI_STATUS_FAIL = "KO";
 export const AI_STATUS_SUCCESS = "OK";
@@ -63,7 +64,7 @@ export function getPrompt(amount, promptMatrix) {
   if(!situation) {
     return;
   }
-  return situation.prompts[randomNumber(situation.prompts.length-1)];
+  return situation.prompts[randomNumber(situation.prompts.length-1)].replace(AMOUNT_TAG, amount);
 }
 
 function randomNumber(max) {
