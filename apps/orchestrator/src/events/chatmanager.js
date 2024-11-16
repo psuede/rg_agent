@@ -8,7 +8,7 @@ import { canInteract } from './../db/postgresdbhandler.js'
 
 export async function manageChat(msg, redis) {
   // for now let all channel messages pass this point
-  if(!msg.isChannelMessage && !await canInteract(msg.from.userId)) {
+  if(msg.chatId != config.RG_TG_FEED_CHAT && !await canInteract(msg.from.userId)) {
     logger.info("User not allowed to interact with the reaper");
     return;
   }

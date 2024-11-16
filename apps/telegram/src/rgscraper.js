@@ -28,13 +28,11 @@ const rgRegex = /(\d+(?:,\d+)*)\s*RG/
 const ethRegex = /(\d+(?:.\d+)*)\s*ETH/;
 const usdRegex = /\$(\d+(?:,\d+)*)/;
 const supplyRegex = /supply_out_of_circulation:\s*([\d.]+)%/;
-const CHANNEL_MESSAGE_IDENTIFIER = "UpdateNewChannelMessage";
 
 export async function scrape(tgClient, redis) {
 
   // listen to new messages
   tgClient.addEventHandler(async (event) => {
-
     let chatId = Number(event.chatId);
     if (!isPartOfGroup(chatId, RG_CHAT_ROOMS)) {
       return;
@@ -53,8 +51,7 @@ export async function scrape(tgClient, redis) {
 
       let sender = await message.getSender();
       let userId = Number(sender.id);
-      let isChannelMessage = (event.originalUpdate.className == CHANNEL_MESSAGE_IDENTIFIER);
-      await handleReaperChat(userId, savedMessage, isChannelMessage, redis);
+      await handleReaperChat(userId, savedMessage, redis);
       await handleBuy(userId, savedMessage, redis);
       await handleLock(userId, savedMessage, redis);
 
@@ -79,11 +76,11 @@ export async function scrape(tgClient, redis) {
 
 }
 
-async function handleReaperChat(senderid, message, isChannelMessage, redis) {
+async function handleReaperChat(senderid, message, redis) {
   // is this a message to the reaper?
   if (message && message.toReaper && senderid != config.TG_REAPER_ID) {
     await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
-      {event: RG_MESSAGE_TO_REAPER, isChannelMessage: isChannelMessage, ...message}
+      {event: RG_MESSAGE_TO_REAPER, ...message}
     ));
   }
 }

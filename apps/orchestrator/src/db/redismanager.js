@@ -29,19 +29,6 @@ export async function getRedisConnection() {
   });
 
   await redisConnection.connect();
-
-  setInterval(function () {
-    if (!redisConnection || (!redisConnection.isReady || !redisConnection.isOpen)) {
-      logger.info("Trying to connect to Redis at " + url);
-
-      try {
-        redisConnection.connect();
-      } catch(err) {
-        logger.error("Could not connect to redis: " + err);
-      }
-    }
-  }, 3500);
-
   return redisConnection;
 }
 
