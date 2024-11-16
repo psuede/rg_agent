@@ -363,17 +363,6 @@ def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger
         agent_logger.log_error(f"Error calling {model_name}: {str(e)}")
         return None
 
-
-
-def short_agent_process(input_data: Dict[str, Any], rag_context: str, agent_logger: AgentLogger) -> Optional[str]:
-  model_input = [
-   {"role": "system", "content": get_system_prompt("The Dreamer")},
-   {"role": "user", "content": input_data}]
-  
-  model_output = call_model_api("The Dreamer", model_input, agent_logger, BUY_LOCK_MODEL_SPECS)
-  return { "status": "OK", "message": model_output.strip().strip('"') }
-
-
 def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
     """Process input through the agent workflow with RAG integration and tag handling."""
     agent_logger = AgentLogger()
@@ -490,10 +479,6 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
                 "output": model_output
             })}
         ]
-        
-        # Add RAG context for Oracle if available
-        if rag_context:
-            oracle_input.insert(1, rag_context)
             
         oracle_output = call_model_api("The Oracle", oracle_input, agent_logger)
         
@@ -517,6 +502,14 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         agent_logger.log_error(f"Error in agent_process: {str(e)}")
         return { "status": "KO", "message": "Internal error" }
     
+def short_agent_process(input_data: Dict[str, Any], rag_context: str, agent_logger: AgentLogger) -> Optional[str]:
+  model_input = [
+   {"role": "system", "content": get_system_prompt("The Dreamer")},
+   {"role": "user", "content": input_data}]
+  
+  model_output = call_model_api("The Dreamer", model_input, agent_logger, BUY_LOCK_MODEL_SPECS)
+  return { "status": "OK", "message": model_output.strip().strip('"') }
+
 def agent_generate_memory(generation_request: PromptType) -> str:
     agent_logger = AgentLogger()   
     try:
