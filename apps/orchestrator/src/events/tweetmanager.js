@@ -20,7 +20,7 @@ export async function manageTweet(msg, redis) {
       {
         event: RG_SEND_TG_TWEET_SUGGESTION,
         message: message,
-        chatId: config.RG_TG_ADMIN_CHAT,
+        chatId: config.RG_TG_FEED_CHAT,
         replyTo: msg.messageid
       }));
   }

@@ -53,7 +53,7 @@ export async function scrape(tgClient, redis) {
 
       let sender = await message.getSender();
       let userId = Number(sender.id);
-      let isChannelMessage = event.originalUpdate.className == CHANNEL_MESSAGE_IDENTIFIER;
+      let isChannelMessage = (event.originalUpdate.className == CHANNEL_MESSAGE_IDENTIFIER);
       await handleReaperChat(userId, savedMessage, isChannelMessage, redis);
       await handleBuy(userId, savedMessage, redis);
       await handleLock(userId, savedMessage, redis);
