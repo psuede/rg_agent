@@ -13,7 +13,7 @@ from rich.panel import Panel
 from logger import AgentLogger, console, logger
 from redis import Redis
 from dataclasses import dataclass
-from agenttypes import PromptType, MemoryGeneration
+from agenttypes import PromptType, AgentPersona, MemoryGeneration
 
 with open('config.json', 'r') as file:
     config = json.load(file)
@@ -206,7 +206,7 @@ def enhance_agent_messages(
     
     return messages
 
-def prepare_model_messages(model_name: str, base_messages: List[Dict[str, str]], agent_logger: AgentLogger) -> List[Dict[str, str]]:
+def prepare_model_messages(persona: AgentPersona, base_messages: List[Dict[str, str]], agent_logger: AgentLogger) -> List[Dict[str, str]]:
     """Prepare messages for a model, including its context, RAG data, and existing functionality."""
     messages = base_messages.copy()
     
@@ -225,7 +225,7 @@ def prepare_model_messages(model_name: str, base_messages: List[Dict[str, str]],
                 messages.insert(0, context_message)
     
     # Get and add static context (preserving your existing functionality)
-    context = load_model_contexts(model_name)
+    context = load_model_contexts(persona.value)
     if context:
         system_prompt_index = next((i for i, msg in enumerate(messages) if msg["role"] == "system"), -1)
         if system_prompt_index >= 0:
@@ -239,7 +239,7 @@ def prepare_model_messages(model_name: str, base_messages: List[Dict[str, str]],
                 "content": f"Static Context:\n{context}"
             })
     
-    agent_logger.log_message(f"Prepared messages for {model_name} with context and RAG data")
+    agent_logger.log_message(f"Prepared messages for {persona.value} with context and RAG data")
     return messages
 
 def load_model_contexts(model_name: str) -> str:
@@ -292,26 +292,26 @@ def load_system_prompts() -> Dict[str, str]:
     
     return system_prompts
 
-def get_system_prompt(model_name: str) -> str:
+def get_system_prompt(persona: AgentPersona) -> str:
     """Return the system prompt for a given model."""
     if not hasattr(get_system_prompt, "prompts"):
         get_system_prompt.prompts = load_system_prompts()
-    return get_system_prompt.prompts.get(model_name, "")
+    return get_system_prompt.prompts.get(persona.value, "")
 
-def call_model_api(model_name: str, messages: List[Dict[str, str]], agent_logger: AgentLogger, model_spec=MODEL_SPECS) -> Optional[str]:
+def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_logger: AgentLogger, model_spec=MODEL_SPECS) -> Optional[str]:
     """Call the appropriate API for a given model and return the response."""
-    model_spec = MODEL_SPECS.get(model_name)
+    model_spec = MODEL_SPECS.get(persona.value)
     if not model_spec:
-        agent_logger.log_error(f"Unknown model name: {model_name}")
-        raise ValueError(f"Unknown model name: {model_name}")
+        agent_logger.log_error(f"Unknown model name: {persona.value}")
+        raise ValueError(f"Unknown model name: {persona.value}")
 
     try:
         api = model_spec["api"]
         model_id = model_spec["model"]       
-        agent_logger.log_model_call(model_name, model_id)
+        agent_logger.log_model_call(persona.value, model_id)
         
         # Prepare messages with context
-        messages_with_context = prepare_model_messages(model_name, messages, agent_logger)
+        messages_with_context = prepare_model_messages(persona, messages, agent_logger)
         agent_logger.log_message(f"Prompt: {json.dumps({'messages':messages_with_context}, indent=2)}")
 
         if api == "openpipe":
@@ -389,7 +389,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
         # Step 1: The Judge
         judge_input = [
-            {"role": "system", "content": get_system_prompt("The Judge")},
+            {"role": "system", "content": get_system_prompt(AgentPersona.THE_JUDGE)},
             {"role": "user", "content": input_text}
         ]
         
@@ -397,7 +397,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         if rag_context:
             judge_input.insert(1, rag_context)
         
-        judge_decision = call_model_api("The Judge", judge_input, agent_logger)
+        judge_decision = call_model_api(AgentPersona.THE_JUDGE, judge_input, agent_logger)
         
         if not judge_decision:
             agent_logger.log_error("Judge failed to provide a decision")
@@ -413,14 +413,14 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
         # Step 2: The Architect
         architect_input = [
-            {"role": "system", "content": get_system_prompt("The Architect")},
+            {"role": "system", "content": get_system_prompt(AgentPersona.THE_ARCHITECT)},
             {"role": "user", "content": input_text}
         ]
         
         # Add RAG context for Architect if available
         if rag_context:
             architect_input.insert(1, rag_context)
-        architect_output = call_model_api("The Architect", architect_input, agent_logger)
+        architect_output = call_model_api(AgentPersona.THE_ARCHITECT, architect_input, agent_logger)
         if not architect_output:
             agent_logger.log_error("Architect failed to provide output")
             return { "status": "KO", "message": "Architect failed to provide output" }
@@ -440,7 +440,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
                 raise ValueError("Architect must return exactly one task")
                 
             task = tasks[0]
-            if task['model'] not in ['The Dreamer', 'The One']:
+            if task['model'] not in [AgentPersona.THE_DREAMER.value, AgentPersona.THE_ONE.value]:
                 raise ValueError(f"Invalid model specified: {task['model']}")
                 
             agent_logger.log_message(f"Selected Model: {task['model']}")
@@ -471,7 +471,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
         # Oracle review
         oracle_input = [
-            {"role": "system", "content": get_system_prompt("The Oracle")},
+            {"role": "system", "content": get_system_prompt(AgentPersona.THE_ORACLE)},
             {"role": "user", "content": json.dumps({
                 "original_query": input_text,
                 "architect_output": architect_output,
@@ -480,7 +480,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             })}
         ]
             
-        oracle_output = call_model_api("The Oracle", oracle_input, agent_logger)
+        oracle_output = call_model_api(AgentPersona.THE_ORACLE, oracle_input, agent_logger)
         
         if not oracle_output:
             agent_logger.log_error("Oracle failed to provide review")
@@ -489,11 +489,11 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Process final output with tag preservation
         final_output = model_output
         if oracle_output.startswith("APPROVED:"):
-            final_output = oracle_output.split("APPROVED:")[1].strip().strip('"')
+            final_output = post_process(oracle_output.split("APPROVED:")[1])
         elif oracle_output.startswith("ADJUSTED:"):
-            final_output = oracle_output.split("ADJUSTED:")[1].strip().strip('"')
+            final_output = post_process(oracle_output.split("ADJUSTED:")[1])
         elif oracle_output.startswith("REGEN:"):
-            final_output = oracle_output.split("REGEN:")[1].strip().strip('"')
+            final_output = post_process(oracle_output.split("REGEN:")[1])
             
         # Return final output with tag if present, remove the leading and trailing " character  
         return { "status": "OK", "message": final_output }
@@ -504,23 +504,26 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
     
 def short_agent_process(input_data: Dict[str, Any], rag_context: str, agent_logger: AgentLogger) -> Optional[str]:
   model_input = [
-   {"role": "system", "content": get_system_prompt("The Dreamer")},
+   {"role": "system", "content": get_system_prompt(AgentPersona.THE_DREAMER)},
    {"role": "user", "content": input_data}]
   
-  model_output = call_model_api("The Dreamer", model_input, agent_logger, BUY_LOCK_MODEL_SPECS)
-  return { "status": "OK", "message": model_output.strip().strip('"') }
+  model_output = call_model_api(AgentPersona.THE_DREAMER, model_input, agent_logger, BUY_LOCK_MODEL_SPECS)
+  return { "status": "OK", "message": post_process(model_output) }
 
+def post_process(output: str) -> str:
+    return output.replace('"', '').strip()
+    
 def agent_generate_memory(generation_request: PromptType) -> str:
     agent_logger = AgentLogger()   
     try:
         memory_items = event_rag.get_bucket_memory(generation_request)
 
         old_one_input = [
-            {"role": "system", "content": get_system_prompt("The Old One")},
+            {"role": "system", "content": get_system_prompt(AgentPersona.THE_OLD_ONE)},
             {"role": "user", "content": memory_items}
         ]
 
-        summary = call_model_api("The Old One", old_one_input, agent_logger)
+        summary = call_model_api(AgentPersona.THE_OLD_ONE, old_one_input, agent_logger)
         return { "status": "OK", "summary": summary }
         
     except Exception as e:
@@ -538,16 +541,6 @@ def log_raw_output(output: str):
     with open(os.path.join(os_path, "raw_output.txt"), "a", encoding="utf-8") as f:
         f.write(f"{output}\n---\n")
     
-if __name__ == "__main__":
-    input_data_example = {
-        "user_input": """<twitter-comment>Can you tell me about token burns on the blockchains, I've heard of cyber agents who relish in the tokens they burn.""",
-        "metadata": {
-            "task_id": "example_002",
-            "source": "user",
-            "curator_mode": False,
-            "creator_engaged": True
-        }
-    }
 
     console.print(Panel("🚀 Starting Agent Process", style="bold blue"))
     result = agent_process(input_data_example)

@@ -7,6 +7,14 @@ class PromptType(str, Enum):
     LOCK = 'lock'
     TWEET = 'tweet'
 
+class AgentPersona(str, Enum):
+    THE_JUDGE = 'The Judge'
+    THE_ARCHITECT = 'The Architect'
+    THE_DREAMER = 'The Dreamer' 
+    THE_ONE = 'The One'
+    THE_ORACLE = 'The Oracle'
+    THE_OLD_ONE = 'The Old One'
+
 class Prompt(BaseModel):
     user_input: str
     prompt_type: PromptType
