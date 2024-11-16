@@ -30,6 +30,7 @@ services:
       - RG_AGENT_POSTGRES_CREDENTIALS
       - RG_AGENT_REDIS_URL=redis
       - RG_TG_MAIN_CHAT_TEST
+      - RG_TG_FEED_CHAT
     depends_on:
       - postgres
       - redis

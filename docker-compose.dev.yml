@@ -14,6 +14,9 @@ services:
       - RG_OPEN_PIPE_KEY
       - RG_OPEN_AI_KEY
       - RG_ANTHROPIC_KEY
+      - RG_AGENT_POSTGRES_URL=postgres
+      - RG_AGENT_DB_USER=rg_agent_db_user
+      - RG_AGENT_DB_PASSWORD
     depends_on:
       - postgres
       - redis
@@ -30,6 +33,7 @@ services:
       - RG_AGENT_POSTGRES_CREDENTIALS
       - RG_AGENT_REDIS_URL=redis
       - RG_TG_MAIN_CHAT_TEST
+      - RG_TG_FEED_CHAT
     depends_on:
       - postgres
       - redis
