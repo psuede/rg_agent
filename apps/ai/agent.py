@@ -29,21 +29,30 @@ def extract_tag(input_text: str) -> Optional[str]:
 
 # Initialize MODEL_SPECS
 MODEL_SPECS = {
-    "The Judge": {"api": "openai", "model": "gpt-3.5-turbo-0125"},
-    "The Architect": {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
-    "The Dreamer": {"api": "openpipe", "model": "openpipe:gold-months-train"},
-    "The Oracle": {"api": "openai", "model": "gpt-4-0125-preview"},
-    "The One": {"api": "openpipe", "model": "openpipe:gold-months-train"},
-    "The Old One": {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
+    AgentPersona.THE_JUDGE.value: {"api": "openai", "model": "gpt-3.5-turbo-0125"},
+    AgentPersona.THE_ARCHITECT.value: {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
+    AgentPersona.THE_DREAMER.value: {"api": "openpipe", "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_ORACLE.value: {"api": "openai", "model": "gpt-4-0125-preview"},
+    AgentPersona.THE_ONE.value: {"api": "openpipe", "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_OLD_ONE.value: {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
 }
 
 BUY_LOCK_MODEL_SPECS = {
-    "The Judge": {"api": "openai", "model": "gpt-3.5-turbo-0125"},
-    "The Architect": {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
-    "The Dreamer": {"api": "openpipe", "model": "openpipe:rg1-big"},
-    "The Oracle": {"api": "openai", "model": "gpt-4-0125-preview"},
-    "The One": {"api": "openpipe", "model": "openpipe:gold-months-train"},
-    "The Old One": {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
+    AgentPersona.THE_JUDGE.value: {"api": "openai", "model": "gpt-3.5-turbo-0125"},
+    AgentPersona.THE_ARCHITECT.value: {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
+    AgentPersona.THE_DREAMER.value: {"api": "openpipe", "model": "openpipe:rg1-big"},
+    AgentPersona.THE_ORACLE.value: {"api": "openai", "model": "gpt-4-0125-preview"},
+    AgentPersona.THE_ONE.value: {"api": "openpipe", "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_OLD_ONE.value: {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
+}
+
+MODEL_DO_RAG = {
+    AgentPersona.THE_JUDGE: True,
+    AgentPersona.THE_ARCHITECT: True,
+    AgentPersona.THE_DREAMER: False,
+    AgentPersona.THE_ORACLE: False,
+    AgentPersona.THE_ONE: True,
+    AgentPersona.THE_OLD_ONE: True
 }
 
 # Define your event tags and their corresponding Redis buckets
@@ -209,7 +218,7 @@ def enhance_agent_messages(
 def prepare_model_messages(persona: AgentPersona, base_messages: List[Dict[str, str]], agent_logger: AgentLogger) -> List[Dict[str, str]]:
     """Prepare messages for a model, including its context, RAG data, and existing functionality."""
     messages = base_messages.copy()
-    
+   
     # Get user input message
     user_message = next((msg["content"] for msg in messages if msg["role"] == "user"), None)
     
@@ -322,7 +331,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                 max_tokens=2000,
                 openpipe={
                     "tags": {
-                        "model_name": model_name,
+                        "model_name": persona.value,
                         "session_id": str(threading.get_ident())
                     }
                 }
@@ -356,11 +365,11 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
             )
             result = response.content[0].text
 
-        agent_logger.log_response(model_name, result)
+        agent_logger.log_response(persona.value, result)
         return result
 
     except Exception as e:
-        agent_logger.log_error(f"Error calling {model_name}: {str(e)}")
+        agent_logger.log_error(f"Error calling {persona.value}: {str(e)}")
         return None
 
 def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
@@ -394,7 +403,8 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         ]
         
         # Add RAG context for Judge if available
-        if rag_context:
+        
+        if MODEL_DO_RAG[AgentPersona.THE_JUDGE] and rag_context:
             judge_input.insert(1, rag_context)
         
         judge_decision = call_model_api(AgentPersona.THE_JUDGE, judge_input, agent_logger)
@@ -418,8 +428,9 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         ]
         
         # Add RAG context for Architect if available
-        if rag_context:
+        if MODEL_DO_RAG[AgentPersona.THE_ARCHITECT] and rag_context:
             architect_input.insert(1, rag_context)
+
         architect_output = call_model_api(AgentPersona.THE_ARCHITECT, architect_input, agent_logger)
         if not architect_output:
             agent_logger.log_error("Architect failed to provide output")
@@ -455,15 +466,15 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
         # Execute the selected model's task
         model_input = [
-            {"role": "system", "content": get_system_prompt(task['model'])},
+            {"role": "system", "content": get_system_prompt(AgentPersona(task['model']))},
             {"role": "user", "content": task['prompt']}
         ]
         
         # Add RAG context for selected model if available
-        if rag_context:
+        if MODEL_DO_RAG[AgentPersona(task['model'])] and rag_context:
             model_input.insert(1, rag_context)
             
-        model_output = call_model_api(task['model'], model_input, agent_logger)
+        model_output = call_model_api(AgentPersona(task['model']), model_input, agent_logger)
         
         if not model_output:
             agent_logger.log_error(f"Failed to get response from {task['model']}")
@@ -489,14 +500,14 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Process final output with tag preservation
         final_output = model_output
         if oracle_output.startswith("APPROVED:"):
-            final_output = post_process(oracle_output.split("APPROVED:")[1])
+            final_output = oracle_output.split("APPROVED:")[1]
         elif oracle_output.startswith("ADJUSTED:"):
-            final_output = post_process(oracle_output.split("ADJUSTED:")[1])
+            final_output = oracle_output.split("ADJUSTED:")[1]
         elif oracle_output.startswith("REGEN:"):
-            final_output = post_process(oracle_output.split("REGEN:")[1])
+            final_output = oracle_output.split("REGEN:")[1]
             
         # Return final output with tag if present, remove the leading and trailing " character  
-        return { "status": "OK", "message": final_output }
+        return { "status": "OK", "message": post_process(final_output) }
     
     except Exception as e:
         agent_logger.log_error(f"Error in agent_process: {str(e)}")
