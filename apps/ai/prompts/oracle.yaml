@@ -15,6 +15,7 @@ prompt: |
      - Must match the complexity/simplicity and format of the user query
      - Should not merely echo or mirror user input
      - Must maintain thematic consistency with message history
+     - Make sure the opening statements are not repetivie and using "in the..." 
   
   2. Style enhancements:
      - Lowercase formatting only
