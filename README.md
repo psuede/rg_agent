@@ -2,6 +2,8 @@
 
 This is a mono repository containing all the components that makes up the AI Reaper persona of the Reaper's Gambit project (https://www.reapersgambit.com).
 
+The background story and philosophy behind the rg_agent are covered in the following <a href="">blog post</a>.
+
 The application is dockerized and consists of the following services:
 
 | Service  | Description  |  Tech stack
@@ -15,6 +17,9 @@ The application is dockerized and consists of the following services:
 |  adminer |  Database administration UI | n/a
 
 ## General information
+The instructions in this document are high level and does not cover all the technical implementation details. In order to setup and use the project it will be necessary to have the skills to inspect the code and adapt it to your specific environment.
+
+
 Environment variables are used for much of the configuration, and the complete list of variables used can be located in the docker compose files under the environment section.
 
 To separate dev/test/prod settings the NODE_ENV value is used, and the parameters are read from the /config/config.js file within each service.
