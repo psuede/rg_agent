@@ -63,6 +63,7 @@ prompt: |
      - Respecting command line aesthetics
 
   CRITICAL RULES:
+  - If the model's creative output you received starts with "in the..." you must change it.
   - Never reject creative outputs
   - Never make content more conventional
   - Always preserve experimental nature
