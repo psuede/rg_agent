@@ -7,7 +7,7 @@ import { TWEET_PROMPT } from './baseprompts.js'
 
 export async function manageTweet(msg, redis) {
 
-  let res = await sendPrompt(TWEET_PROMPT, `Someone sent the following message, do you have anything to say about it? Message: ${msg.text}`);
+  let res = await sendPrompt(TWEET_PROMPT, `Someone sent the following message, do you have anything to say about it? Message: ${cleanTweet(msg.text)}`);
   if (res) {
     if(res.status == AI_STATUS_SUCCESS) {
       await addToBucket(TWEET_BUCKET, msg.text, redis);
@@ -25,4 +25,12 @@ export async function manageTweet(msg, redis) {
       }));
   }
 
+}
+
+function cleanTweet(text) {
+  // remove @ and # tags
+  text = text.replace(/[@]\w+/g, "");
+  // remove urls
+  text = text.replace(/https?:\/\/[^\s]+/g, "");
+  return text;
 }

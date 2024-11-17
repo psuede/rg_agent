@@ -26,7 +26,7 @@ export async function agentRouter(message, redis) {
       return;
     }
     // no start/stop mechanism for tweets, for now
-    manageTweet(message, redis);
+    await manageTweet(message, redis);
   }
 
   if(!isAiActive()) {

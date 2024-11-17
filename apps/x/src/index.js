@@ -29,16 +29,28 @@ async function fetchTweets() {
         let res = await addTweetIfNotExists(tweet);
         if(res && res.rowCount > 0) {
           logger.info("New tweet added: " + tweet.text);
-          await redisConnection.publish(config.RG_EVENT_KEY, 
-            JSON.stringify({event: RG_NEW_TWEET, ...tweet, url: (GENERIC_TWEET_URL + tweet.id)}));
-          // wait a bit to not overwhelm downstream systems
-          await new Promise(resolve => setTimeout(resolve, WAIT_BETWEEN_EVENTS));
+          if(!filterTweet(tweet.text)) {
+            await redisConnection.publish(config.RG_EVENT_KEY, 
+              JSON.stringify({event: RG_NEW_TWEET, ...tweet, url: (GENERIC_TWEET_URL + tweet.id)}));
+            // wait a bit to not overwhelm downstream systems
+            await new Promise(resolve => setTimeout(resolve, WAIT_BETWEEN_EVENTS));
+          } else {
+            logger.info("Tweet filtered out.")
+          }
         }
       }
     }
   } catch (err) {
     logger.info("Request failed " + err)
   }
+}
+
+function filterTweet(content) {
+  // some basic filter to remove tweets we dont want the system to treat
+  let shouldFilter = false;
+  // filter retweets
+  shouldFilter |= (content.indexOf("RT") > -1);
+  return shouldFilter;
 }
 
 async function fakeTweet() {
