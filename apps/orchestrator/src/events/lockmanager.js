@@ -8,6 +8,11 @@ import { LOCK_BUCKET, addToBucket } from '../memorymanager.js';
 
 export async function manageLock(msg, redis) {
   let prompt = getPrompt(Number(msg.rg), LOCK_PROMPTS);
+
+  if(!prompt) { 
+    return;
+  }
+
   let res = await sendPrompt(LOCK_PROMPT, prompt);
 
   if (res && res.status == AI_STATUS_SUCCESS) {

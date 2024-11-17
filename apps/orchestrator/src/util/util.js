@@ -61,9 +61,16 @@ export function getPrompt(amount, promptMatrix) {
       break;
     }
   }
+
   if(!situation) {
     return;
   }
+
+  if((randomNumber(100) > situation.chanceOfReplying)) {
+    logger.info("Ignoring event due to randomness filter");
+    return;
+  }
+
   return situation.prompts[randomNumber(situation.prompts.length-1)].replace(AMOUNT_TAG, amount);
 }
 

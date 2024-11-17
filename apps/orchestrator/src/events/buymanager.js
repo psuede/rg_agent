@@ -7,6 +7,10 @@ import { BUY_BUCKET, addToBucket } from '../memorymanager.js';
 export async function manageBuy(msg, redis) {
 
   let prompt = getPrompt(Number(msg.value), BUY_PROMPTS);
+  
+  if(!prompt) { 
+    return;
+  }
 
   let res = await sendPrompt(BUY_PROMPT, prompt)
   if (res && res.status == AI_STATUS_SUCCESS) {
