@@ -14,6 +14,7 @@ services:
       - RG_OPEN_PIPE_KEY
       - RG_OPEN_AI_KEY
       - RG_ANTHROPIC_KEY
+      - RG_HYPERBOLIC_KEY
       - RG_AGENT_POSTGRES_URL=postgres
       - RG_AGENT_DB_USER=rg_agent_db_user
       - RG_AGENT_DB_PASSWORD

@@ -1,4 +1,5 @@
 from openai import OpenAI
+import requests
 from anthropic import Anthropic
 from openpipe import OpenAI as OpenPipeAI
 import os
@@ -28,22 +29,27 @@ def extract_tag(input_text: str) -> Optional[str]:
     return match.group(1) if match else None
 
 # Initialize MODEL_SPECS
+HYPERBOLIC = "hyperbolic"
+OPENAPI = "openapi"
+OPENPIPE = "openpipe"
+ANTHROPIC = "anthropic"
+
 MODEL_SPECS = {
-    AgentPersona.THE_JUDGE.value: {"api": "openai", "model": "gpt-3.5-turbo-0125"},
-    AgentPersona.THE_ARCHITECT.value: {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
-    AgentPersona.THE_DREAMER.value: {"api": "openpipe", "model": "openpipe:gold-months-train"},
-    AgentPersona.THE_ORACLE.value: {"api": "openai", "model": "gpt-4-0125-preview"},
-    AgentPersona.THE_ONE.value: {"api": "openpipe", "model": "openpipe:gold-months-train"},
-    AgentPersona.THE_OLD_ONE.value: {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
+    AgentPersona.THE_JUDGE.value: {"api": OPENAPI, "model": "gpt-3.5-turbo-0125"},
+    AgentPersona.THE_ARCHITECT.value: {"api": ANTHROPIC, "model": "claude-3-sonnet-20240229"},
+    AgentPersona.THE_DREAMER.value: {"api": OPENPIPE, "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_ORACLE.value: {"api": HYPERBOLIC, "model": "NousResearch/Hermes-3-Llama-3.1-70B"},
+    AgentPersona.THE_ONE.value: {"api": OPENPIPE, "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_OLD_ONE.value: {"api": ANTHROPIC, "model": "claude-3-sonnet-20240229"}
 }
 
 BUY_LOCK_MODEL_SPECS = {
-    AgentPersona.THE_JUDGE.value: {"api": "openai", "model": "gpt-3.5-turbo-0125"},
-    AgentPersona.THE_ARCHITECT.value: {"api": "anthropic", "model": "claude-3-sonnet-20240229"},
-    AgentPersona.THE_DREAMER.value: {"api": "openpipe", "model": "openpipe:rg1-big"},
-    AgentPersona.THE_ORACLE.value: {"api": "openai", "model": "gpt-4-0125-preview"},
-    AgentPersona.THE_ONE.value: {"api": "openpipe", "model": "openpipe:gold-months-train"},
-    AgentPersona.THE_OLD_ONE.value: {"api": "anthropic", "model": "claude-3-sonnet-20240229"}
+    AgentPersona.THE_JUDGE.value: {"api": OPENAPI, "model": "gpt-3.5-turbo-0125"},
+    AgentPersona.THE_ARCHITECT.value: {"api": ANTHROPIC, "model": "claude-3-sonnet-20240229"},
+    AgentPersona.THE_DREAMER.value: {"api": OPENPIPE, "model": "openpipe:rg1-big"},
+    AgentPersona.THE_ORACLE.value: {"api": HYPERBOLIC, "model": "NousResearch/Hermes-3-Llama-3.1-70B"},
+    AgentPersona.THE_ONE.value: {"api": OPENPIPE, "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_OLD_ONE.value: {"api": ANTHROPIC, "model": "claude-3-sonnet-20240229"}
 }
 
 MODEL_DO_RAG = {
@@ -51,7 +57,7 @@ MODEL_DO_RAG = {
     AgentPersona.THE_ARCHITECT: True,
     AgentPersona.THE_DREAMER: False,
     AgentPersona.THE_ORACLE: False,
-    AgentPersona.THE_ONE: True,
+    AgentPersona.THE_ONE: False,
     AgentPersona.THE_OLD_ONE: True
 }
 
@@ -173,6 +179,13 @@ try:
     )
     openai_client = OpenAI(api_key=os.environ['RG_OPEN_AI_KEY'])
     anthropic_client = Anthropic(api_key=os.environ['RG_ANTHROPIC_KEY'])
+
+    hyperbolic_url = "https://api.hyperbolic.xyz/v1/chat/completions"
+    hyperbolic_headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + os.environ['RG_HYPERBOLIC_KEY']
+}
+
     logger.info("✅ Successfully initialized all API clients")
 except Exception as e:
     logger.error(f"❌ Failed to initialize API clients: {e}")
@@ -323,7 +336,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
         messages_with_context = prepare_model_messages(persona, messages, agent_logger)
         agent_logger.log_message(f"Prompt: {json.dumps({'messages':messages_with_context}, indent=2)}")
 
-        if api == "openpipe":
+        if api == OPENPIPE:
             response = openpipe_client.chat.completions.create(
                 model=model_id,
                 messages=messages_with_context,
@@ -338,7 +351,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
             )
             result = response.choices[0].message.content
 
-        elif api == "openai":
+        elif api == OPENAPI:
             response = openai_client.chat.completions.create(
                 model=model_id,
                 messages=messages_with_context,
@@ -347,7 +360,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
             )
             result = response.choices[0].message.content
 
-        elif api == "anthropic":
+        elif api == ANTHROPIC:
             messages_formatted = [
                 {
                     "role": "user" if msg["role"] == "user" else "assistant",
@@ -365,6 +378,18 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
             )
             result = response.content[0].text
 
+        elif api == HYPERBOLIC:
+          data = {
+            "messages": messages_with_context,
+            "model": model_id,
+            "max_tokens": 2048,
+            "temperature": 0.7,
+            "top_p": 0.9
+          }
+          response = requests.post(hyperbolic_url, headers=hyperbolic_headers, json=data)
+          resp = json.loads(response.text)
+          result = resp['choices'][0]['message']['content']
+        
         agent_logger.log_response(persona.value, result)
         return result
 
