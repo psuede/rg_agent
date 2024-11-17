@@ -8,13 +8,13 @@ The application is dockerized and consists of the following services:
 
 | Service  | Description  |  Tech stack
 | ------------ | ------------ |  ------------ 
-|  ai | Contains the AI orchestration engine, making sequential calls to specialized models depending on the use case.  | Python
-|  telegramhandler | Scrapes Telegram messages from groups and channels where the agent lives  | NodeJS / JavaScript
-|  orchestrator | Receieves events from the data ingestion and forwards to the appropriate target  | NodeJS / JavaScript
-|  xagent | Scrapes messages from X  | NodeJS/JavaScript
-|  postgres | Data storage of Telegram and X content   | Postgres
-|  redis | Used as pub/sub message bus for the intra service communication, and keeps short and long term memory  | Redis
-|  adminer |  Database administration UI | n/a
+|  orchestrator | Receieves events from the data ingestion and forwards to the appropriate target.  | NodeJS / JavaScript
+|  ai | Contains the AI processing engine, making sequential calls to specialized models depending on the use case.  | Python
+|  telegramhandler | Scrapes Telegram messages from groups and channels where the agent lives.  | NodeJS / JavaScript
+|  xagent | Scrapes messages from X.  | NodeJS / JavaScript
+|  postgres | Data storage of Telegram and X content.   | Postgres
+|  redis | Used as pub/sub message bus for the intra service communication, and keeps short and long term memory.  | Redis
+|  adminer |  Database administration UI. | n/a
 
 ## General information
 The instructions in this document are high level and does not cover all the technical implementation details. In order to setup and use the project it will be necessary to have the skills to inspect the code and adapt it to your specific environment.
