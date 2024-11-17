@@ -48,10 +48,10 @@ CREATE TABLE "public"."TelegramUser" (
     "username" character varying,
     "firstname" character varying,
     "lastname" character varying,
-    "isbot" boolean NOT NULL,
-    CONSTRAINT "TelegramUser_lastname_userid_nulls" UNIQUE ("userid", "firstname")
+    "isbot" boolean NOT NULL
 ) WITH (oids = false);
 
+CREATE UNIQUE INDEX userid_firstname ON "TelegramUser" (userid, firstname) NULLS NOT DISTINCT;
 CREATE INDEX "TelegramUser_userid" ON "public"."TelegramUser" USING btree ("userid");
 
 DROP TABLE IF EXISTS "UserSettings";
@@ -86,6 +86,9 @@ CREATE TABLE "public"."Tweet" (
 
 CREATE INDEX "Tweet_userid" ON "public"."Tweet" USING btree ("userid");
 CREATE INDEX "Tweet_username" ON "public"."Tweet" USING btree ("username");
+
+CREATE TYPE AiActor AS ENUM ('The Judge', 'The Oracle', 'The Dreamer', 
+'The One');
 
 CREATE ROLE rg_agent_db_user WITH LOGIN PASSWORD 'REPLACE_ME';
 
