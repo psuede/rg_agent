@@ -39,13 +39,11 @@ async function manageRgEvent(msg, tgClient) {
 }
 
 function getTypingDelay(msg) {
-  let MIN_SHORT_TYPING_DELAY = 4 * 1000;
-  let MAX_SHORT_TYPING_DELAY = randomNumber(6) * 1000;
-  let MIN_LONG_TYPING_DELAY = 10 * 1000;
-  let MAX_LONG_TYPING_DELAY = randomNumber(20) * 1000;
-
+  let MIN_SHORT_TYPING_DELAY = 2 * 1000;
+  let MAX_SHORT_TYPING_DELAY = randomNumber(3) * 1000;
+  let MIN_LONG_TYPING_DELAY = 3 * 1000;
+  let MAX_LONG_TYPING_DELAY = randomNumber(6) * 1000;
   return msg.length < 10 ? Math.max(MIN_SHORT_TYPING_DELAY, MAX_SHORT_TYPING_DELAY) : Math.max(MIN_LONG_TYPING_DELAY, MAX_LONG_TYPING_DELAY);
-
 }
 
 function randomNumber(max) {
