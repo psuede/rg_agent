@@ -2,7 +2,7 @@
 
 This is a mono repository containing all the components that makes up the AI Reaper persona of the Reaper's Gambit project (https://www.reapersgambit.com).
 
-The background story and philosophy behind the rg_agent are covered in the following <a href="">blog post</a>.
+The background story and philosophy behind the rg_agent are covered in the following <a href="https://medium.com/@figure31/unleashing-the-reaper-23d91a74000b">blog post</a>.
 
 The application is dockerized and consists of the following services:
 
