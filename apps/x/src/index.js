@@ -18,12 +18,14 @@ let redisConnection = await getRedisConnection();
 
 const WAIT_BETWEEN_EVENTS = 5000;
 const TWEET_FETCH_HOUR_INTERVAL = 2; // once every 2 hours
-const SEARCH_QUERY = "@reapers_gambit";
+const SEARCH_QUERY = "@reapers_gambit is:verified";
+const NUM_TWEETS = 10;
 
-async function fetchTweets() {
+async function fetchTweets(query, options) {
   
   try {
-    const tweets = await twitterClient.v2.search(SEARCH_QUERY, { max_results: 10 });
+    logger.info("Searching for tweets with query: " + query);
+    const tweets = await twitterClient.v2.search(query, options);
     if(tweets) {
       for(const tweet of tweets) {
         let res = await addTweetIfNotExists(tweet);
@@ -60,9 +62,16 @@ async function fakeTweet() {
 
 (async()=> {
   logger.info("Starting X agent, will fetch new tweets once every " + TWEET_FETCH_HOUR_INTERVAL + " hours");
+  
+  fetchTweets(SEARCH_QUERY, { max_results: NUM_TWEETS } );
+
+  let searchFrom = 1000 * 60 * 60 * TWEET_FETCH_HOUR_INTERVAL;
+
   setInterval(() => { 
-    logger.info("Fetching new tweets");
-    fetchTweets();
-  }, 1000 * 60 * 60 * TWEET_FETCH_HOUR_INTERVAL);
+    const now = new Date();
+    const startTime = new Date(now.getTime() - searchFrom).toISOString(); 
+    fetchTweets(SEARCH_QUERY, { max_results: NUM_TWEETS /*, start_time:startTime*/});
+
+  }, searchFrom);
 
 })()
