@@ -356,7 +356,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                 model=model_id,
                 messages=messages_with_context,
                 temperature=0.8,
-                max_tokens=1500
+                max_tokens=3000
             )
             result = response.choices[0].message.content
 
@@ -373,7 +373,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                 model=model_id,
                 messages=messages_formatted,
                 system=next((msg["content"] for msg in messages_with_context if msg["role"] == "system"), None),
-                max_tokens=1500,
+                max_tokens=3000,
                 temperature=0.85
             )
             result = response.content[0].text
@@ -382,7 +382,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
           data = {
             "messages": messages_with_context,
             "model": model_id,
-            "max_tokens": 2048,
+            "max_tokens": 3000,
             "temperature": 0.7,
             "top_p": 0.9
           }
