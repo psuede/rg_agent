@@ -18,7 +18,7 @@ let redisConnection = await getRedisConnection();
 
 const WAIT_BETWEEN_EVENTS = 5000;
 const TWEET_FETCH_HOUR_INTERVAL = 2; // once every 2 hours
-const SEARCH_QUERY = "@reapers_gambit is:verified";
+const SEARCH_QUERY = "@reapers_gambit is:verified -dm -offer -promotion -scam -rug -marketing";
 const NUM_TWEETS = 10;
 
 async function fetchTweets(query, options) {
