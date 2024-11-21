@@ -44,7 +44,7 @@ export async function scrape(tgClient, redis) {
       let data = message.message;
       let savedMessage;
       try {
-        savedMessage = await saveMessage(message, data, chatId, timestamp);
+        savedMessage = await saveMessage(message, data, chatId, timestamp, event);
       } catch(err) {
         logger.error(err)
       }
@@ -151,20 +151,28 @@ function isPartOfGroup(id, groups) {
   return isRgGroup;
 }
 
-export async function saveMessage(message, data, chatId, timestamp) {
+export async function saveMessage(message, data, chatId, timestamp, event) {
 
   let sender = await message.getSender();
   let reaperReplyTo = message.replyTo ? message.replyTo.replyToMsgId : null;
   let isBot = sender.bot;
   let userId = Number(sender.id);
   let firstName = sender.firstName;
+  if(!firstName) {
+    // backup (this will happen in channels)
+    firstName = event.originalUpdate.message.postAuthor;
+  }
+
   let lastName = sender.lastName;
   let userName = sender.username;
 
   if (!userName) {
     if (sender.usernames && sender.usernames > 0) {
       userName = sender.usernames[0];
+    } else if(firstName != null) {
+      userName = firstName;
     }
+
   }
 
   let isMedia = (message.media != null);
