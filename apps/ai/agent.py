@@ -146,7 +146,7 @@ class EventRAGReader:
             except Exception as e:
                 logger.error(f"Error reading from bucket {bucket}: {e}")
                 continue
-        return sorted(contexts, key=lambda x: x.timestamp, reverse=True)
+        return sorted(contexts, key=lambda x: x.timestamp, reverse=False)
     
     
     def prepare_context_message(self, prompt_type: PromptType) -> Optional[Dict[str, str]]:
