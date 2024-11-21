@@ -45,7 +45,7 @@ config.RG_CHAT_MEMORY_BUCKET_MAX_SIZE = get({
   dev: null,
   test: 5,
   prod: null,
-  default: 25
+  default: 35
 });
 
 config.RG_CHAT_MEMORY_BUCKET_MIN_SIZE = get({
