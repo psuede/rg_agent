@@ -1,7 +1,7 @@
 
 import { config } from './config/config.js';
 import { logger } from './logger.js';
-import { sendGenerationRequest } from './util/util.js'
+import { REAPER_PERSONA_NAME, sendGenerationRequest } from './util/util.js'
 import { CHAT_PROMPT, BUY_PROMPT, LOCK_PROMPT, TWEET_PROMPT } from './events/baseprompts.js';
 
 export const CHAT_BUCKET = {
@@ -39,7 +39,7 @@ export const LONGTERM_MEMORY = {
 
 export async function addToBucket(bucket, name, item, redis) {
   try {
-    await redis.xAdd(bucket.key, '*', { role: "assistant", content: item, name: name });
+    await redis.xAdd(bucket.key, '*', { role: name==REAPER_PERSONA_NAME ? "assistant" : "user", content: item, name: name });
     const size = await redis.xLen(bucket.key);
     logger.info("added short term memory " + bucket.key + ", size: " + size);
     if(size >= bucket.maxSize) {
