@@ -4,6 +4,7 @@ import { AMOUNT_TAG } from './../events/baseprompts.js';
 
 export const AI_STATUS_FAIL = "KO";
 export const AI_STATUS_SUCCESS = "OK";
+export const REAPER_PERSONA_NAME = "The Reaper";
 
 let aiactive = true;
 let xactive = true;
@@ -24,9 +25,10 @@ export function isXactive() {
   return xactive;
 }
 
-export async function sendPrompt(type, data) {
+export async function sendPrompt(type, data, name) {
   let prompt = {
     user_input : data,
+    name : name,
     prompt_type : type
   }
   try {

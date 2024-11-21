@@ -6,11 +6,13 @@ from agenttypes import Prompt, PromptType
 
 app = FastAPI()
 
+
 @app.post("/prompt/")
 async def root(prompt : Prompt):
     input_data = {
         "user_input": prompt.user_input,
         "metadata": {
+            "name" : prompt.name,
             "prompt_type" : prompt.prompt_type,
             "task_id": "example_002",
             "source": "user",

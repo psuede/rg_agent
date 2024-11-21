@@ -71,9 +71,10 @@ EVENT_TAGS = {
 
 @dataclass
 class EventContext:
+    role: str
+    name: str
     content: str
     timestamp: str
-    metadata: Dict
 
 class EventRAGReader:
     # Mapping of tags to Redis bucket names
@@ -98,9 +99,11 @@ class EventRAGReader:
         bucket = self.BUCKET_MAPPING.get(memory_type)
         bucket_items = self.redis_client.xrange(bucket, min='-', max='+')
         memory = ""
+        content_tag = 'content'
         for item_id, item_data in bucket_items:
-            memory += item_data['output']
-            memory += "\n"
+            if(content_tag in item_data) :
+              memory += ("{ 'role:' 'assistant', 'name': '" + item_data['name'] + "', 'content': '" + item_data[content_tag] + "'")
+              memory += "\n"
 
         return memory
 
@@ -125,15 +128,17 @@ class EventRAGReader:
         for bucket in buckets:
             try:
                 # Get latest items from the bucket
-                                   
                 items = self.redis_client.xrevrange(bucket, min='-', max='+') if bucket != current_config['LONG_TERM_MEMORY_KEY'] else self.redis_client.xrevrange(bucket, min='-', max='+', count=current_config['LONG_TERM_MEMORY_COUNT'])
                 for item_id, item_data in items:
+                    item_data_json = item_data #son.loads(item_data)
+
                     try:
+                        content_tag = "content"
                         contexts.append(EventContext(
-                            content=item_data['output'],
-                            timestamp=item_id.decode() if isinstance(item_id, bytes) else item_id,
-                            metadata=json.loads(item_data.get('metadata', '{}'))
-                        ))
+                        role=item_data_json["role"],
+                        name=item_data_json["name"].replace(" ", "-"),
+                        content=item_data_json[content_tag],
+                        timestamp=item_id.decode() if isinstance(item_id, bytes) else item_id))
                     except json.JSONDecodeError:
                         logger.warning(f"Invalid metadata in {bucket}: {item_data}")
                         continue
@@ -141,7 +146,6 @@ class EventRAGReader:
             except Exception as e:
                 logger.error(f"Error reading from bucket {bucket}: {e}")
                 continue
-                
         return sorted(contexts, key=lambda x: x.timestamp, reverse=True)
     
     
@@ -149,7 +153,6 @@ class EventRAGReader:
         """Prepare context message for the agent based on input tag."""
         try:               
             contexts = self.get_recent_context(prompt_type)
-
             if not contexts:
                 return None
                 
@@ -157,17 +160,15 @@ class EventRAGReader:
             context_parts = []
             for ctx in contexts:
                 context_parts.append(
-                    f"[{ctx.timestamp}] {ctx.content}\n"
-                    f"Metadata: {json.dumps(ctx.metadata, indent=2)}"
+                  {
+                      "role": ctx.role,
+                      "name": ctx.name,
+                      "content": ctx.content
+                  }
                 )
+            return context_parts
                 
-            return {
-                "role": "system",
-                "content": (
-                    f"Recent {prompt_type.value} Context:\n\n" +
-                    "\n---\n".join(context_parts)
-                )
-            }
+
         except Exception as e:
             logger.debug(f"RAG context retrieval skipped: {str(e)}")
             return None
@@ -214,6 +215,7 @@ def enhance_agent_messages(
     # Get RAG context
     if event_rag is not None:
         context_message = event_rag.prepare_context_message(input_text)
+        
         if context_message:
             # Find best position to insert context
             system_index = next(
@@ -405,6 +407,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Extract event tag and log input
         input_text = input_data["user_input"]
         prompt_type = input_data["metadata"]['prompt_type']
+        name = input_data["metadata"]['name']
         # Use the standalone extract_tag function instead of depending on event_rag
         agent_logger.log_user_input(input_text)
         
@@ -424,13 +427,13 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Step 1: The Judge
         judge_input = [
             {"role": "system", "content": get_system_prompt(AgentPersona.THE_JUDGE)},
-            {"role": "user", "content": input_text}
+            {"role": "user", "name": name, "content": input_text}
         ]
         
         # Add RAG context for Judge if available
         
         if MODEL_DO_RAG[AgentPersona.THE_JUDGE] and rag_context:
-            judge_input.insert(1, rag_context)
+            judge_input = judge_input[:1] + rag_context + judge_input[1:]
         
         judge_decision = call_model_api(AgentPersona.THE_JUDGE, judge_input, agent_logger)
         
@@ -449,12 +452,12 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Step 2: The Architect
         architect_input = [
             {"role": "system", "content": get_system_prompt(AgentPersona.THE_ARCHITECT)},
-            {"role": "user", "content": input_text}
+            {"role": "user", "name": name, "content": input_text}
         ]
         
         # Add RAG context for Architect if available
         if MODEL_DO_RAG[AgentPersona.THE_ARCHITECT] and rag_context:
-            architect_input.insert(1, rag_context)
+            architect_input = architect_input[:1] + rag_context + architect_input[1:]
 
         architect_output = call_model_api(AgentPersona.THE_ARCHITECT, architect_input, agent_logger)
         if not architect_output:
@@ -492,12 +495,12 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Execute the selected model's task
         model_input = [
             {"role": "system", "content": get_system_prompt(AgentPersona(task['model']))},
-            {"role": "user", "content": task['prompt']}
+            {"role": "user", "name": name, "content": task['prompt']}
         ]
         
         # Add RAG context for selected model if available
         if MODEL_DO_RAG[AgentPersona(task['model'])] and rag_context:
-            model_input.insert(1, rag_context)
+            model_input = model_input[:1] + rag_context + model_input[1:]
             
         model_output = call_model_api(AgentPersona(task['model']), model_input, agent_logger)
         
@@ -508,7 +511,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         # Oracle review
         oracle_input = [
             {"role": "system", "content": get_system_prompt(AgentPersona.THE_ORACLE)},
-            {"role": "user", "content": json.dumps({
+            {"role": "user", "name": name, "content": json.dumps({
                 "original_query": input_text,
                 "architect_output": architect_output,
                 "model": task["model"],

@@ -37,21 +37,25 @@ export const LONGTERM_MEMORY = {
   size: 100
 }
 
-export async function addToBucket(bucket, item, redis) {
+export async function addToBucket(bucket, name, item, redis) {
   try {
-    await redis.xAdd(bucket.key, '*', { output: item });
+    await redis.xAdd(bucket.key, '*', { role: "assistant", content: item, name: name });
     const size = await redis.xLen(bucket.key);
     logger.info("added short term memory " + bucket.key + ", size: " + size);
     if(size >= bucket.maxSize) {
       // fetch long term memory
       logger.info("Generating long term memory for " + bucket.type);
       let longTermMemoryItem = await sendGenerationRequest(bucket.type);
+      if(longTermMemoryItem.status == "KO") {
+        logger.warn("AI did not generate a correct long term memory: " + longTermMemoryItem.message);
+      }
       // save to redis !
       await redis.xAdd(config.RG_LONGTERM_MEMORY_BUCKET, '*', { output: longTermMemoryItem.summary });
       logger.info("Redis resetting bucket " + bucket.key);
       await redis.xTrim(bucket.key, 'MAXLEN', bucket.minSize);
     }
   } catch (err) {
+    console.log(err)
     logger.error(err);
   }
 

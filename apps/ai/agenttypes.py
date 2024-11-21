@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 from pydantic import BaseModel
 
 class PromptType(str, Enum):
@@ -17,6 +18,7 @@ class AgentPersona(str, Enum):
 
 class Prompt(BaseModel):
     user_input: str
+    name: Optional[str] = None
     prompt_type: PromptType
 
 class MemoryGeneration(BaseModel):
