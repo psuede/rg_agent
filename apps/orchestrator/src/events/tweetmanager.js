@@ -5,13 +5,16 @@ import { RG_SEND_TG_TWEET_SUGGESTION } from './../config/eventkeys.js';
 import { TWEET_BUCKET, addToBucket } from '../memorymanager.js';
 import { TWEET_PROMPT } from './baseprompts.js'
 
-export async function manageTweet(msg, redis) {
+// todo: fetch the actual name of the x account
+const tweeterFakeName = "tweeter";
 
-  let res = await sendPrompt(TWEET_PROMPT, `Someone sent the following message, do you have anything to say about it? Message: ${cleanTweet(msg.text)}`);
+export async function manageTweet(msg, redis) {
+  let aiQuery = `Someone sent the following message, do you have anything to say about it? Message: ${cleanTweet(msg.text)}`;
+  let res = await sendPrompt(TWEET_PROMPT, aiQuery, tweeterFakeName);
   if (res) {
     if(res.status == AI_STATUS_SUCCESS) {
       // todo: provide the profile name here instead of "tweeter"
-      await addToBucket(TWEET_BUCKET, "tweeter", msg.text, redis);
+      await addToBucket(TWEET_BUCKET, tweeterFakeName, msg.text, redis);
       await addToBucket(TWEET_BUCKET, REAPER_PERSONA_NAME, res.message, redis);
     }
 
