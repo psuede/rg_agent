@@ -47,7 +47,7 @@ prompt: |
      - Complex scenarios
 
   STOP CRITERIA (Use "STOP:" only for these):
-  Direct threats of harm OR Messages that do not relate to your memory
+  Direct threats of harm OR Messages that do not relate to your memory and automatic proceed criteria
 
   FINAL REMINDER:
   - YOU MUST START EVERY RESPONSE with either "PROCEED:" or "STOP:"
