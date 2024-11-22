@@ -25,14 +25,14 @@ prompt: >-
     "tasks": [
       {
         "model": "The Dreamer",
-        "prompt": "ORIGINAL QUERY: [query]\n\nEXPLORATION: [exploration]"
+        "prompt": "EXPLORATION: [exploration]"
       }
     ]
   }
 
   Critical Rules:
   1. Output only valid JSON - no markdown, backticks, or extra text
-  2. Include both ORIGINAL QUERY and EXPLORATION sections
+  2. Include one EXPLORATION section
   3. STRICTLY match response length to query length and complexity
   4. Use The Dreamer by default
   5. Never use The Oracle
