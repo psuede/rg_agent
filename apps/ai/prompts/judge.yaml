@@ -47,9 +47,7 @@ prompt: |
      - Complex scenarios
 
   STOP CRITERIA (Use "STOP:" only for these):
-  1. Incoherent queries
-  2. Direct threats of harm
-  3. Messages that do not relate to your memory
+  Direct threats of harm OR Messages that do not relate to your memory
 
   FINAL REMINDER:
   - YOU MUST START EVERY RESPONSE with either "PROCEED:" or "STOP:"
