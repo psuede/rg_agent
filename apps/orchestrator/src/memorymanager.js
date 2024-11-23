@@ -39,7 +39,7 @@ export const LONGTERM_MEMORY = {
 
 export async function addToBucket(bucket, name, item, redis) {
   try {
-    await redis.xAdd(bucket.key, '*', { role: name==REAPER_PERSONA_NAME ? "assistant" : "user", content: item, name: name });
+    await redis.xAdd(bucket.key, '*', { role: (name==REAPER_PERSONA_NAME ? "assistant" : "user"), content: item, name: name });
     const size = await redis.xLen(bucket.key);
     logger.info("added short term memory " + bucket.key + ", size: " + size);
     if(size >= bucket.maxSize) {
@@ -50,7 +50,7 @@ export async function addToBucket(bucket, name, item, redis) {
         logger.warn("AI did not generate a correct long term memory: " + longTermMemoryItem.message);
       }
       // save to redis !
-      await redis.xAdd(config.RG_LONGTERM_MEMORY_BUCKET, '*', { output: longTermMemoryItem.summary });
+      await redis.xAdd(config.RG_LONGTERM_MEMORY_BUCKET, '*', { role: "assistant", content: longTermMemoryItem.summary, name: REAPER_PERSONA_NAME });
       logger.info("Redis resetting bucket " + bucket.key);
       await redis.xTrim(bucket.key, 'MAXLEN', bucket.minSize);
     }

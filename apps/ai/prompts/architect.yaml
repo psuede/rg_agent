@@ -22,13 +22,10 @@ prompt: >-
 
   RESPONSE FORMAT - STRICTLY OUTPUT A SINGLE JSON OBJECT:
   {
-    "tasks": [
-      {
-        "model": "The Dreamer",
-        "prompt": "EXPLORATION: [exploration]"
-      }
-    ]
+    "model": "The Dreamer",
+    "prompt": "EXPLORATION: [exploration]"
   }
+  
 
   Critical Rules:
   1. Output only valid JSON - no markdown, backticks, or extra text
@@ -36,7 +33,6 @@ prompt: >-
   3. STRICTLY match response length to query length and complexity
   4. Use The Dreamer by default
   5. Never use The Oracle
-  6. One task only
 
   Response Types:
   - Quick social/memetic interactions for short queries

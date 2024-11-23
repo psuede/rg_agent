@@ -472,16 +472,11 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             # extract the json part of the reply
             json_match = re.search(r'({.*})', architect_output, re.DOTALL)
             architect_output = json_match.group(1).replace('\n', '')
-            parsed_output = json.loads(architect_output)
-            tasks = parsed_output.get('tasks', [])
-            
-            if not tasks or len(tasks) != 1:
-                raise ValueError("Architect must return exactly one task")
-                
-            task = tasks[0]
+            task = json.loads(architect_output)
+
             if task['model'] not in [AgentPersona.THE_DREAMER.value, AgentPersona.THE_ONE.value]:
-                raise ValueError(f"Invalid model specified: {task['model']}")
-                
+              raise ValueError(f"Invalid model specified: {task['model']}")
+
             agent_logger.log_message(f"Selected Model: {task['model']}")
 
         except json.JSONDecodeError:
