@@ -463,24 +463,26 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         if not architect_output:
             agent_logger.log_error("Architect failed to provide output")
             return { "status": "KO", "message": "Architect failed to provide output" }
-
+            
         try:
             architect_output = architect_output.strip()
             if architect_output.startswith("```"):
                 architect_output = "\n".join(architect_output.split("\n")[1:-1])
-
-            # extract the json part of the reply
+            
             json_match = re.search(r'({.*})', architect_output, re.DOTALL)
-            if not json_match:  # <- new null check
+            if not json_match:
                 raise ValueError("No JSON object found in architect output")
-            architect_output = json_match.group(1).strip()  # <- only removes leading/trailing whitespace
-            task = json.loads(architect_output)
 
+            json_str = json_match.group(1)
+            json_str = ''.join(char for char in json_str if char >= ' ' or char in '\n\r')
+            
+            task = json.loads(json_str)
+            
             if task['model'] not in [AgentPersona.THE_DREAMER.value, AgentPersona.THE_ONE.value]:
-              raise ValueError(f"Invalid model specified: {task['model']}")
-
+                raise ValueError(f"Invalid model specified: {task['model']}")
+                
             agent_logger.log_message(f"Selected Model: {task['model']}")
-
+            
         except (json.JSONDecodeError, ValueError) as e:
             agent_logger.log_error(f"Failed to parse Architect output: {str(e)}")
             agent_logger.log_error("Architect output: " + architect_output)
