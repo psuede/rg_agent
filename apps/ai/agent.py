@@ -471,7 +471,9 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
             # extract the json part of the reply
             json_match = re.search(r'({.*})', architect_output, re.DOTALL)
-            architect_output = json_match.group(1).replace('\n', '')
+            if not json_match:  # <- new null check
+                raise ValueError("No JSON object found in architect output")
+            architect_output = json_match.group(1).strip()  # <- only removes leading/trailing whitespace
             task = json.loads(architect_output)
 
             if task['model'] not in [AgentPersona.THE_DREAMER.value, AgentPersona.THE_ONE.value]:
@@ -479,13 +481,10 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
             agent_logger.log_message(f"Selected Model: {task['model']}")
 
-        except json.JSONDecodeError:
-            agent_logger.log_error("Failed to parse Architect output as JSON")
+        except (json.JSONDecodeError, ValueError) as e:
+            agent_logger.log_error(f"Failed to parse Architect output: {str(e)}")
             agent_logger.log_error("Architect output: " + architect_output)
             return { "status": "KO", "message": "Invalid task structure from Architect" }
-        except Exception as e:
-            agent_logger.log_error(f"Error processing Architect output: {str(e)}")
-            return { "status": "KO", "message": "Error processing Architect output" }
 
         # Execute the selected model's task
         prompt = input_text + "\n" + task['prompt']
