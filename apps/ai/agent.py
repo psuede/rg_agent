@@ -488,7 +488,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             return { "status": "KO", "message": "Error processing Architect output" }
 
         # Execute the selected model's task
-        prompt = 'ORIGINAL QUERY: ' + input_text + "\n" + task['prompt']
+        prompt = input_text + "\n" + task['prompt']
         model_input = [
             {"role": "system", "content": get_system_prompt(AgentPersona(task['model']))},
             {"role": "user", "name": name, "content": prompt}
