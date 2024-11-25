@@ -476,7 +476,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             json_str = json_match.group(1)
             json_str = ''.join(char for char in json_str if char >= ' ' or char in '\n\r')
             
-            task = json.loads(json_str)
+            task = json.loads(sanitize_string(json_str))
             
             if task['model'] not in [AgentPersona.THE_DREAMER.value, AgentPersona.THE_ONE.value]:
                 raise ValueError(f"Invalid model specified: {task['model']}")
@@ -565,6 +565,10 @@ def agent_generate_memory(generation_request: PromptType) -> str:
     except Exception as e:
         agent_logger.log_error(f"Error in agent_generate_memory: {str(e)}")
         return { "status": "KO", "message": "Internal error" }
+
+def sanitize_string(input_string):
+  sanitized_string = re.sub(r'[\x00-\x1f\x7f]', '', input_string)
+  return sanitized_string
         
 def log_raw_output(output: str):
     """Log raw output to a dedicated file."""
