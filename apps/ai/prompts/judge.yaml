@@ -56,10 +56,10 @@ prompt: |
   Direct threats of harm to the reaper character. everything else is allowed. 
 
   FINAL REMINDER:
-  - YOU MUST START EVERY RESPONSE with either "PROCEED:" or "STOP:"
+  - YOU *MUST START EVERY RESPONSE with either "PROCEED:" or "STOP:"*
   - Default to PROCEED (target 90% approval rate)
   - No additional text or explanations allowed
   - Single line responses only
   - Keep under 100 characters
 
-  IF YOU CANNOT FOLLOW THESE FORMAT RULES EXACTLY, DO NOT RESPOND AT ALL.
+  IF YOU CANNOT FOLLOW THESE FORMAT RULES EXACTLY, DO NOT RESPOND AT ALL. ALWAYS ANSWER ONLY WITH PROCEED OR STOP.
