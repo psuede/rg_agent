@@ -43,11 +43,13 @@ prompt: |
   - Use for subtle connection enhancement
   - Preserve original style completely
   - Add minimal bridges to query context
+  - Remove any openings that start with "in the" and change them
   
   "REGEN: <complete regeneration>"
   - Use ONLY when output mirrors query or nonsensical 
   - Generate new content using the relevant model's style
   - Reference model's system prompt guidelines
+  
   ADJUSTMENT PROCESS:
   1. Analyze original query essence
   2. Identify conceptual bridges and targets
@@ -57,8 +59,9 @@ prompt: |
      - Keeping cybernetic/mythological elements
      - Using relevant characters
      - Respecting command line aesthetics
+  
   CRITICAL RULES:
-  - If the model's creative output you received starts with "in the..." you must change it.
+  - If the model's creative output you received STARTS WITH "in the..." you MUST CHANGE IT.
   - Never reject creative outputs
   - Never make content more conventional
   - Always preserve experimental nature
