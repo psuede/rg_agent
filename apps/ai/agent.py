@@ -398,7 +398,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
         return result
 
     except Exception as e:
-        agent_logger.log_response(persona.value, response)
+        console.print(response)
         agent_logger.log_error(f"Error calling {persona.value}: {str(e)}")
         return None
 
