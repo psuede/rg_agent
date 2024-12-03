@@ -329,6 +329,8 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
         agent_logger.log_error(f"Unknown model name: {persona.value}")
         raise ValueError(f"Unknown model name: {persona.value}")
 
+    response = ''
+
     try:
         api = model_spec["api"]
         model_id = model_spec["model"]       
@@ -396,6 +398,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
         return result
 
     except Exception as e:
+        agent_logger.log_response(persona.value, response)
         agent_logger.log_error(f"Error calling {persona.value}: {str(e)}")
         return None
 
