@@ -17,7 +17,7 @@ prompt: >-
 
   MODEL SELECTION RULES:
   - DEFAULT: Use "The Dreamer" for most queries
-  - EXCEPTION: Use "The One" ONLY for prophecy-critical queries or when explicitly requested
+  - EXCEPTION: Use "The One" ONLY when explicitly requested or for special occasions
 
   PROMPT GENERATION GUIDELINES:
   - SHORT QUERIES:
