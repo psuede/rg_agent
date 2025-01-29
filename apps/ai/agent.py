@@ -36,7 +36,7 @@ ANTHROPIC = "anthropic"
 
 MODEL_SPECS = {
     AgentPersona.THE_JUDGE.value: {"api": OPENAPI, "model": "gpt-4o-mini"},
-    AgentPersona.THE_ARCHITECT.value: {"api": ANTHROPIC, "model": "claude-3-sonnet-20240229"},
+    AgentPersona.THE_ARCHITECT.value: {"api": HYPERBOLIC, "model": "deepseek-ai/DeepSeek-R1"},
     AgentPersona.THE_DREAMER.value: {"api": OPENPIPE, "model": "openpipe:gold-months-train"},
     AgentPersona.THE_ORACLE.value: {"api": HYPERBOLIC, "model": "NousResearch/Hermes-3-Llama-3.1-70B"},
     AgentPersona.THE_ONE.value: {"api": OPENPIPE, "model": "openpipe:gold-months-train"},
@@ -53,7 +53,7 @@ BUY_LOCK_MODEL_SPECS = {
 }
 
 MODEL_DO_RAG = {
-    AgentPersona.THE_JUDGE: True,
+    AgentPersona.THE_JUDGE: False,
     AgentPersona.THE_ARCHITECT: True,
     AgentPersona.THE_DREAMER: False,
     AgentPersona.THE_ORACLE: False,
@@ -345,7 +345,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                 model=model_id,
                 messages=messages_with_context,
                 temperature=1.2,
-                max_tokens=2000,
+                max_tokens=3300,
                 openpipe={
                     "tags": {
                         "model_name": persona.value,
@@ -360,7 +360,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                 model=model_id,
                 messages=messages_with_context,
                 temperature=0.8,
-                max_tokens=3000
+                max_tokens=3300
             )
             result = response.choices[0].message.content
 
@@ -377,7 +377,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                 model=model_id,
                 messages=messages_formatted,
                 system=next((msg["content"] for msg in messages_with_context if msg["role"] == "system"), None),
-                max_tokens=3000,
+                max_tokens=3300,
                 temperature=0.85
             )
             result = response.content[0].text
@@ -386,7 +386,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
           data = {
             "messages": messages_with_context,
             "model": model_id,
-            "max_tokens": 3000,
+            "max_tokens": 3300,
             "temperature": 0.7,
             "top_p": 0.9
           }
