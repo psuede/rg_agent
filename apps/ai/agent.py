@@ -37,18 +37,18 @@ ANTHROPIC = "anthropic"
 MODEL_SPECS = {
     AgentPersona.THE_JUDGE.value: {"api": OPENAPI, "model": "gpt-4o-mini"},
     AgentPersona.THE_ARCHITECT.value: {"api": HYPERBOLIC, "model": "deepseek-ai/DeepSeek-R1"},
-    AgentPersona.THE_DREAMER.value: {"api": OPENPIPE, "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_DREAMER.value: {"api": OPENPIPE, "model": "openpipe:public-laws-attack"},
     AgentPersona.THE_ORACLE.value: {"api": HYPERBOLIC, "model": "NousResearch/Hermes-3-Llama-3.1-70B"},
-    AgentPersona.THE_ONE.value: {"api": OPENPIPE, "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_ONE.value: {"api": OPENPIPE, "model": "openpipe:public-laws-attack"},
     AgentPersona.THE_OLD_ONE.value: {"api": ANTHROPIC, "model": "claude-3-sonnet-20240229"}
 }
 
 BUY_LOCK_MODEL_SPECS = {
     AgentPersona.THE_JUDGE.value: {"api": OPENAPI, "model": "gpt-4o-mini"},
     AgentPersona.THE_ARCHITECT.value: {"api": ANTHROPIC, "model": "claude-3-sonnet-20240229"},
-    AgentPersona.THE_DREAMER.value: {"api": OPENPIPE, "model": "openpipe:rg1-big"},
+    AgentPersona.THE_DREAMER.value: {"api": OPENPIPE, "model": "openpipe:public-laws-attack"},
     AgentPersona.THE_ORACLE.value: {"api": HYPERBOLIC, "model": "NousResearch/Hermes-3-Llama-3.1-70B"},
-    AgentPersona.THE_ONE.value: {"api": OPENPIPE, "model": "openpipe:gold-months-train"},
+    AgentPersona.THE_ONE.value: {"api": OPENPIPE, "model": "openpipe:public-laws-attack"},
     AgentPersona.THE_OLD_ONE.value: {"api": ANTHROPIC, "model": "claude-3-sonnet-20240229"}
 }
 
