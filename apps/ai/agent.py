@@ -463,11 +463,11 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         if MODEL_DO_RAG[AgentPersona.THE_ARCHITECT] and rag_context:
             architect_input = architect_input[:1] + rag_context + architect_input[1:]
 
-        architect_output = call_model_api(AgentPersona.THE_ARCHITECT, architect_input, agent_logger)
-        if not architect_output:
-            agent_logger.log_error("Architect failed to provide output")
-            return { "status": "KO", "message": "Architect failed to provide output" }
-            
+          architect_output = call_model_api(AgentPersona.THE_ARCHITECT, architect_input, agent_logger)
+          if not architect_output:
+              agent_logger.log_error("Architect failed to provide output")
+              return { "status": "KO", "message": "Architect failed to provide output" }
+
           try:
               architect_output = architect_output.strip()
 
@@ -494,11 +494,11 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
 
               # Set architect_output to clean JSON for Oracle
               architect_output = json_str
-            
-        except (json.JSONDecodeError, ValueError) as e:
-            agent_logger.log_error(f"Failed to parse Architect output: {str(e)}")
-            agent_logger.log_error("Architect output: " + architect_output)
-            return { "status": "KO", "message": "Invalid task structure from Architect" }
+
+          except (json.JSONDecodeError, ValueError) as e:
+              agent_logger.log_error(f"Failed to parse Architect output: {str(e)}")
+              agent_logger.log_error("Architect output: " + architect_output)
+              return { "status": "KO", "message": "Invalid task structure from Architect" }
 
         # Execute the selected model's task
         prompt = input_text + "\n" + task['prompt']
