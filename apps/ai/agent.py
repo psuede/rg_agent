@@ -354,7 +354,8 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                     }
                 }
             )
-
+              result = response.choices[0].message.content
+        
         elif api == OPENAPI:
             response = openai_client.chat.completions.create(
                 model=model_id,
