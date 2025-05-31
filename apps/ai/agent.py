@@ -340,26 +340,26 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
         messages_with_context = prepare_model_messages(persona, messages, agent_logger)
         agent_logger.log_message(f"Prompt: {json.dumps({'messages':messages_with_context}, indent=2)}")
 
-        if api == OPENPIPE:
-            response = openpipe_client.chat.completions.create(
-                model=model_id,
-                messages=messages_with_context,
-                temperature=1.2,
-                max_tokens=3300,
-                openpipe={
-                    "tags": {
-                        "model_name": persona.value,
-                        "session_id": str(threading.get_ident())
-                    }
-                }
-            )
-            result = response.choices[0].message.content
+          if api == OPENPIPE:
+              response = openpipe_client.chat.completions.create(
+                  model=model_id,
+                  messages=messages_with_context,
+                  temperature=0.6,  # REDUCED from 1.2
+                  top_p=0.8,       # ADDED for better control
+                  max_tokens=3300,
+                  openpipe={
+                      "tags": {
+                          "model_name": persona.value,
+                          "session_id": str(threading.get_ident())
+                      }
+                  }
+              )
 
         elif api == OPENAPI:
             response = openai_client.chat.completions.create(
                 model=model_id,
                 messages=messages_with_context,
-                temperature=0.8,
+                temperature=0.5,
                 max_tokens=3300
             )
             result = response.choices[0].message.content
@@ -378,7 +378,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                 messages=messages_formatted,
                 system=next((msg["content"] for msg in messages_with_context if msg["role"] == "system"), None),
                 max_tokens=3300,
-                temperature=0.85
+                temperature=0.5
             )
             result = response.content[0].text
 
@@ -387,7 +387,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
             "messages": messages_with_context,
             "model": model_id,
             "max_tokens": 3300,
-            "temperature": 0.7,
+            "temperature": 0.5,
             "top_p": 0.9
           }
           response = requests.post(hyperbolic_url, headers=hyperbolic_headers, json=data)
