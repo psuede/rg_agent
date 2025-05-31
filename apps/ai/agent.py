@@ -463,42 +463,42 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
         if MODEL_DO_RAG[AgentPersona.THE_ARCHITECT] and rag_context:
             architect_input = architect_input[:1] + rag_context + architect_input[1:]
 
-          architect_output = call_model_api(AgentPersona.THE_ARCHITECT, architect_input, agent_logger)
-          if not architect_output:
-              agent_logger.log_error("Architect failed to provide output")
-              return { "status": "KO", "message": "Architect failed to provide output" }
+        architect_output = call_model_api(AgentPersona.THE_ARCHITECT, architect_input, agent_logger)
+        if not architect_output:
+            agent_logger.log_error("Architect failed to provide output")
+            return { "status": "KO", "message": "Architect failed to provide output" }
 
-          try:
-              architect_output = architect_output.strip()
+        try:
+            architect_output = architect_output.strip()
 
-              # Remove <think>...</think> content
-              if "<think>" in architect_output and "</think>" in architect_output:
-                  architect_output = re.sub(r'<think>.*?</think>', '', architect_output, flags=re.DOTALL).strip()
+            # Remove <think>...</think> content
+            if "<think>" in architect_output and "</think>" in architect_output:
+                architect_output = re.sub(r'<think>.*?</think>', '', architect_output, flags=re.DOTALL).strip()
 
-              if architect_output.startswith("```"):
-                  architect_output = "\n".join(architect_output.split("\n")[1:-1])
+            if architect_output.startswith("```"):
+                architect_output = "\n".join(architect_output.split("\n")[1:-1])
 
-              json_match = re.search(r'({.*})', architect_output, re.DOTALL)
-              if not json_match:
-                  raise ValueError("No JSON object found in architect output")
+            json_match = re.search(r'({.*})', architect_output, re.DOTALL)
+            if not json_match:
+                raise ValueError("No JSON object found in architect output")
 
-              json_str = json_match.group(1)
-              json_str = ''.join(char for char in json_str if char >= ' ' or char in '\n\r')
+            json_str = json_match.group(1)
+            json_str = ''.join(char for char in json_str if char >= ' ' or char in '\n\r')
 
-              task = json.loads(sanitize_string(json_str), strict=False)
+            task = json.loads(sanitize_string(json_str), strict=False)
 
-              if task['model'] not in [AgentPersona.THE_DREAMER.value, AgentPersona.THE_ONE.value]:
-                  raise ValueError(f"Invalid model specified: {task['model']}")
+            if task['model'] not in [AgentPersona.THE_DREAMER.value, AgentPersona.THE_ONE.value]:
+                raise ValueError(f"Invalid model specified: {task['model']}")
 
-              agent_logger.log_message(f"Selected Model: {task['model']}")
+            agent_logger.log_message(f"Selected Model: {task['model']}")
 
-              # Set architect_output to clean JSON for Oracle
-              architect_output = json_str
+            # Set architect_output to clean JSON for Oracle
+            architect_output = json_str
 
-          except (json.JSONDecodeError, ValueError) as e:
-              agent_logger.log_error(f"Failed to parse Architect output: {str(e)}")
-              agent_logger.log_error("Architect output: " + architect_output)
-              return { "status": "KO", "message": "Invalid task structure from Architect" }
+        except (json.JSONDecodeError, ValueError) as e:
+            agent_logger.log_error(f"Failed to parse Architect output: {str(e)}")
+            agent_logger.log_error("Architect output: " + architect_output)
+            return { "status": "KO", "message": "Invalid task structure from Architect" }
 
         # Execute the selected model's task
         prompt = input_text + "\n" + task['prompt']
