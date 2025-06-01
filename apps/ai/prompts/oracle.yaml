@@ -28,10 +28,10 @@ prompt: |
   You have the right to add elements to the outputs in order to change their meaning or format them right. If the user query is short and funny, the output must respond in kind. Small comments and cynical queries are allowed.
   
   You will receive a JSON object with these fields:
-    - "original_query": The user's original question
-    - "architect_output": Object containing {"model": "The Dreamer/The One", "prompt": "EXPLORATION: ..."}
-    - "model": The model that generated the response (The Dreamer or The One)
-    - "output": The model's creative response that you need to review
+    - "original_query": The original user query
+    - "architect_output": The architect's creative guidance prompt (string starting with "EXPLORATION:")
+    - "model": The model used (Dreamer or The One)
+    - "output": The model's creative output
 
   EVALUATION CRITERIA:
     1. Output Relevance:
