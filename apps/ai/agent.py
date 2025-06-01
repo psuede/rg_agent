@@ -379,7 +379,7 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
                 messages=messages_formatted,
                 system=next((msg["content"] for msg in messages_with_context if msg["role"] == "system"), None),
                 max_tokens=3300,
-                temperature=0.5
+                temperature=0.4
             )
             result = response.content[0].text
 
