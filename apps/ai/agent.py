@@ -522,7 +522,7 @@ def agent_process(input_data: Dict[str, Any]) -> Optional[str]:
             {"role": "system", "content": get_system_prompt(AgentPersona.THE_ORACLE)},
             {"role": "user", "name": name, "content": json.dumps({
                 "original_query": input_text,
-                "architect_output": task,
+                "architect_output": task["prompt"],
                 "model": task["model"],
                 "output": model_output
             })}
