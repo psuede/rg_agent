@@ -391,9 +391,33 @@ def call_model_api(persona: AgentPersona, messages: List[Dict[str, str]], agent_
             "temperature": 0.5,
             "top_p": 0.9
           }
-          response = requests.post(hyperbolic_url, headers=hyperbolic_headers, json=data)
-          resp = json.loads(response.text)
-          result = resp['choices'][0]['message']['content']
+          
+          # Retry logic for Hyperbolic API (especially Oracle)
+          max_retries = 3
+          for attempt in range(max_retries):
+              response = requests.post(hyperbolic_url, headers=hyperbolic_headers, json=data)
+              resp = json.loads(response.text)
+              
+              # Check for API error response
+              if 'object' in resp and resp['object'] == 'error':
+                  if attempt == max_retries - 1:  # Last attempt
+                      agent_logger.log_error(f"Hyperbolic API error after {max_retries} attempts: {resp.get('message', 'Unknown error')}")
+                      return None
+                  else:
+                      agent_logger.log_message(f"Hyperbolic API error attempt {attempt + 1}: {resp.get('message', 'Unknown error')}, retrying...")
+                      continue
+              
+              # Success case
+              if 'choices' in resp and resp['choices']:
+                  result = resp['choices'][0]['message']['content']
+                  break
+              else:
+                  if attempt == max_retries - 1:  # Last attempt
+                      agent_logger.log_error(f"Unexpected Hyperbolic response format: {resp}")
+                      return None
+                  else:
+                      agent_logger.log_message(f"Unexpected response format attempt {attempt + 1}, retrying...")
+                      continue
         
         agent_logger.log_response(persona.value, result)
         return result
