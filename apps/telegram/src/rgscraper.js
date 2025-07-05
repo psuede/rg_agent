@@ -5,7 +5,6 @@ import { RG_MESSAGE_TO_REAPER, RG_BUY_BOT_MESSAGE, RG_LOCK_MESSAGE } from "./con
 import { addTelegramMessageEntity, addTelegramUserIfNeeded, addTelegramMessage, getTelegramMessageEntity, getTelegramMessageChain, markDeleted } from './db/postgresdbhandler.js'
 import { config } from './config/config.js';
 
-
 const RG_CHAT_ROOMS = [
   {
     name: "RG_MainChat",
@@ -21,7 +20,7 @@ const RG_CHAT_ROOMS = [
   }
 ]
 
-// lock message patterns
+// lock msg patterns
 const walletLockedIdentifier = "wallet.locked";
 const addressRegex = /0x[a-fA-F0-9]{40}/;
 const rgRegex = /(\d+(?:,\d+)*)\s*RG/
