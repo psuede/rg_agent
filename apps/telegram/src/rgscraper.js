@@ -78,15 +78,10 @@ export async function scrape(tgClient, redis) {
 
 async function handleReaperChat(senderid, message, redis) {
   // is this a message to the reaper?
-  console.log("yo")
-  console.log(senderid)
-  console.log(message)
   if (message && message.toReaper && senderid != config.TG_REAPER_ID) {
     await redis.publish(config.RG_EVENT_KEY, JSON.stringify(
       {event: RG_MESSAGE_TO_REAPER, ...message}
     ));
-  } else {
-    console.log("not publishing to redis")
   }
 }
 
